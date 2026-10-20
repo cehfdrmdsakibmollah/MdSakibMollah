@@ -47,3 +47,6 @@ server.on('error',(error:NodeJS.ErrnoException)=>{
  process.exitCode=1;
 });
 connectDb().then(()=>server.listen(env.PORT,()=>console.log(`API listening on ${env.PORT}`))).catch(err=>{console.error('Database connection failed',err);process.exitCode=1;});
+
+// Vercel Express/Node runtime can discover the HTTP server, while local dev uses listen().
+export default server;
