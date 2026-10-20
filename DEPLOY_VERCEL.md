@@ -98,3 +98,14 @@ Add the **exact deployed frontend hostname** without `https://`. For preview URL
 GitHub Actions typecheck/build checks are not a substitute for a live database/Firebase integration test. Vercel setup requires an authorized Vercel scope; linking the GitHub account by itself does not grant a missing Vercel team grant.
 
 **Sources:** https://vercel.com/docs/frameworks/backend/express, https://vercel.com/docs/monorepos and https://vercel.com/changelog/websocket-support-is-now-in-public-beta.
+
+## Automated public smoke checks
+
+After deploying both projects and configuring the frontend `API_INTERNAL_URL`, run this **read-only** command from the repository root, using your own public deployed URLs:
+
+```powershell
+node scripts/check-production.mjs https://YOUR-FRONTEND.vercel.app https://YOUR-BACKEND.vercel.app
+```
+
+It checks Express/MongoDB health, Next.js homepage, the backend proxy and chat availability. It never needs tokens, passwords, private keys or admin access. **Even with all checks passing, test Firebase Google login, private message persistence and admin replies manually with authenticated browser sessions.**
+

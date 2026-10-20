@@ -30,7 +30,7 @@ async function proxy(request:NextRequest,{params}:{params:Promise<{path:string[]
   return new NextResponse(content,{status:response.status,headers:{'content-type':response.headers.get('content-type')||'application/json','cache-control':'no-store'}});
  }catch(error){
   console.error('Portfolio API unavailable:',error instanceof Error?error.message:'Unknown');
-  return NextResponse.json({error:'Backend is offline or unreachable. Start the API on port 4000 and check your MongoDB connection. This message was not delivered.'},{status:503});
+  return NextResponse.json({error:'Backend is temporarily unreachable. Check the API deployment and MongoDB connection. This message was not delivered.'},{status:503});
  }
 }
 export {proxy as GET,proxy as POST,proxy as PATCH};
