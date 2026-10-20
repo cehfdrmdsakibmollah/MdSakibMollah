@@ -1,7 +1,7 @@
 import express, {type ErrorRequestHandler} from 'express';
 import http from 'node:http';
 import cors from 'cors';
-import helmet from 'helmet';
+import * as helmetModule from 'helmet';
 import compression from 'compression';
 import {rateLimit} from 'express-rate-limit';
 import {Server as IoServer} from 'socket.io';
@@ -12,7 +12,7 @@ import {createRoutes} from './routes.js';
 import {env} from './config.js';
 const app=express();app.disable('x-powered-by');app.set('trust proxy',1);
 const origins=env.WEB_ORIGIN.split(',').map(s=>s.trim());
-app.use(helmet());app.use(cors({origin:origins,methods:['GET','POST','PATCH']}));
+app.use(helmetModule.default());app.use(cors({origin:origins,methods:['GET','POST','PATCH']}));
 app.use(compression());app.use(express.json({limit:'30kb'}));
 app.use('/api/v1',(_req,res,next)=>{res.setHeader('Cache-Control','no-store');next();});
 app.use('/api/v1',rateLimit({windowMs:60*1000,limit:60,standardHeaders:'draft-8',legacyHeaders:false}));
