@@ -40,8 +40,8 @@ try {
     & npx opennextjs-cloudflare build
     if ($LASTEXITCODE -ne 0) { throw "Cloudflare build failed. Do not deploy until it passes." }
     Write-Host "Deploying frontend Worker..." -ForegroundColor Cyan
-    & npx wrangler deploy
-    if ($LASTEXITCODE -ne 0) { throw "Wrangler deployment failed." }
+    & npx opennextjs-cloudflare deploy
+    if ($LASTEXITCODE -ne 0) { throw "OpenNext deployment failed." }
     Write-Host ""
     Write-Host "Worker deploy command finished. Check the *.workers.dev URL printed above." -ForegroundColor Green
     Write-Host "If Google sign-in fails, add the new hostname to Firebase Authorized domains."
