@@ -6,7 +6,7 @@ import ChatFeedback from './chat-feedback';
 import {useAuth} from './providers';
 import {callApi,type Message,type Conversation} from '@/lib/api';
 import {quickReply} from '@/lib/quick-replies';
-type LocalMessage={id:number;sender:'client'|'assistant';text:string};
+type LocalMessage={id:string;sender:'client'|'assistant';text:string};
 export default function ChatWidget(){
  const {user,setAuthOpen}=useAuth();
  const [open,setOpen]=useState(false);
@@ -27,7 +27,7 @@ export default function ChatWidget(){
  const load=useCallback(async(id:string,silent=false)=>{
   if(!user)return;
   try{const result=await callApi<{messages:Message[]}>(`/conversations/${id}/messages`,{},user);setMessages(result.messages);setOnline(true);if(!silent)setError('')}
-  catch(e){setOnline(false);if(!silent)setError(e instanceof Error?e.message:'Could not refresh messages')}
+  catch(e){if(!silent)setError(e instanceof Error?e.message:'Could not refresh messages')}
  },[user]);
  useEffect(()=>{if(!open)return;void checkHealth();const timer=setInterval(()=>void checkHealth(),15000);return()=>clearInterval(timer)},[open,checkHealth]);
  useEffect(()=>{
@@ -38,7 +38,7 @@ export default function ChatWidget(){
     const {conversation:c}=await callApi<{conversation:Conversation}>('/conversations/start',{method:'POST'},user);
     if(cancelled)return;
     setConversation(c);setOnline(true);await load(c._id);
-   }catch(e){if(!cancelled){setConversation(null);setOnline(false);setError(e instanceof Error?e.message:'Backend offline. Private messages are unavailable.')}}
+   }catch(e){if(!cancelled){setConversation(null);setError(e instanceof Error?e.message:'Private messaging is unavailable.')}}
   }
   void init();return()=>{cancelled=true};
  },[open,user,verified,load]);
@@ -48,7 +48,7 @@ export default function ChatWidget(){
   return()=>clearInterval(timer)
  },[open,conversation,verified,load]);
  useEffect(()=>{if(open)endRef.current?.scrollIntoView({behavior:'smooth',block:'end'})},[messages,localMessages,open,busy]);
- function appendLocal(sender:LocalMessage['sender'],content:string){number.current+=1;setLocalMessages(current=>[...current,{id:number.current,sender,text:content}]);}
+ function appendLocal(sender:LocalMessage['sender'],content:string){number.current+=1;setLocalMessages(current=>[...current,{id:`offline-${number.current}-${crypto.randomUUID()}`,sender,text:content}]);}
  async function submit(e:FormEvent){
   e.preventDefault();const value=text.trim();if(!value||busy)return;
   setText('');setError('');
@@ -61,7 +61,7 @@ export default function ChatWidget(){
   try{
    const {messages:added}=await callApi<{messages:Message[]}>(`/conversations/${conversation._id}/messages`,{method:'POST',body:JSON.stringify({text:value})},user);
    setMessages(current=>[...current.filter(m=>!added.some(a=>a._id===m._id)),...added]);setOnline(true)
-  }catch(e){setText(value);setOnline(false);setError(`${e instanceof Error?e.message:'Message failed'}. Your message was NOT confirmed delivered. You can retry.`)}
+  }catch(e){setText(value);setError(`${e instanceof Error?e.message:'Message failed'}. Your message was NOT confirmed delivered. You can retry.`)}
   finally{setBusy(false)}
  }
  return <>
