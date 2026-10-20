@@ -54,7 +54,7 @@ export default function ChatWidget(){
   setText('');setError('');
   if(!verified||!conversation||online===false){
    appendLocal('client',value);appendLocal('assistant',quickReply(value));
-   if(verified)setError('Offline assistant only: your question was NOT sent or saved for Sakib. Start the API and retry through the contact form.');
+   if(verified)setError('Offline assistant only: your question was NOT sent or saved for Sakib. Check the backend connection or use the contact form.');
    return;
   }
   setBusy(true);
