@@ -37,7 +37,16 @@ app.use('/api/v1',createRoutes(io));
 app.use((_req,res)=>res.status(404).json({error:'Route not found'}));
 const errors:ErrorRequestHandler=(err,req,res,_next)=>{
  const status=err instanceof ZodError?400:typeof err.status==='number'?err.status:500;
+ const code=typeof err.code==='string' && /^[A-Z_]{3,50}$/.test(err.code)?err.code:undefined;
  if(status===500)console.error('Unhandled API error:',err);
- res.status(status).json({error:err instanceof ZodError?'Invalid request: '+err.issues.map(i=>i.path.join('.')+': '+i.message).join('; '):status===500?'Unexpected server error':err.message});
+ res.status(status).json({error:err instanceof ZodError?'Invalid request: '+err.issues.map(i=>i.path.join('.')+': '+i.message).join('; '):status===500?'Unexpected server error':err.message, ...(code?{code}:{})});
 };app.use(errors);
-connectDb().then(()=>server.listen(env.PORT,()=>console.log(`API listening on ${env.PORT}`))).catch(err=>{console.error('Database connection failed',err);process.exit(1);});
+server.on('error',(error:NodeJS.ErrnoException)=>{
+ if(error.code==='EADDRINUSE') console.error(`[API] Port ${env.PORT} is in use. Stop the older API process before starting another.`);
+ else console.error('[API] HTTP listener failed:',error);
+ process.exitCode=1;
+});
+connectDb().then(()=>server.listen(env.PORT,()=>console.log(`API listening on ${env.PORT}`))).catch(err=>{console.error('Database connection failed',err);process.exitCode=1;});
+
+// Vercel Express/Node runtime can discover the HTTP server, while local dev uses listen().
+export default server;

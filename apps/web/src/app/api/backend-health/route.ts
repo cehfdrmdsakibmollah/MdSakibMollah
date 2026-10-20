@@ -1,2 +1,18 @@
 import {NextResponse} from 'next/server';
-export async function GET(){try{const r=await fetch((process.env.API_INTERNAL_URL||'http://127.0.0.1:4000/api/v1')+'/health',{signal:AbortSignal.timeout(3500),cache:'no-store'});return NextResponse.json({online:r.ok},{status:r.ok?200:503})}catch{return NextResponse.json({online:false},{status:503})}}
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+export async function GET() {
+ const configured = process.env.API_INTERNAL_URL?.trim();
+ const base = configured || (process.env.NODE_ENV==='production' ? '' : 'http://127.0.0.1:4000/api/v1');
+ if (!base || (process.env.NODE_ENV==='production' && !base.startsWith('https://'))) {
+   return NextResponse.json({online:false,reason:'backend_unconfigured'},{status:503});
+ }
+ try {
+   const target = new URL(base.replace(/\/$/,'')+'/health');
+   const response = await fetch(target,{signal:AbortSignal.timeout(3500),cache:'no-store'});
+   return NextResponse.json({online:response.ok},{status:response.ok?200:503});
+ } catch {
+   return NextResponse.json({online:false},{status:503});
+ }
+}

@@ -5,7 +5,7 @@ import dns from "node:dns";
 const { Schema, model, models } = mongoose;
 
 
-const timestamps={timestamps:true,versionKey:false};
+const timestamps={timestamps:true,versionKey:false} as const;
 const leadSchema=new Schema({
   name:{type:String,required:true,trim:true,maxlength:90},email:{type:String,required:true,lowercase:true,trim:true,maxlength:254},
   company:{type:String,trim:true,maxlength:100,default:''},service:{type:String,trim:true,maxlength:100,default:''},

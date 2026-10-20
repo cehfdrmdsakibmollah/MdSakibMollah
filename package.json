@@ -6,9 +6,12 @@
     "apps/api"
   ],
   "scripts": {
-    "dev": "concurrently -n WEB,API -c cyan,magenta \"npm run dev -w apps/web\" \"npm run dev -w apps/api\"",
+    "dev": "node scripts/port-check.mjs && concurrently -n WEB,API -c cyan,magenta \"npm run dev -w apps/web\" \"npm run dev -w apps/api\"",
     "build": "npm run build -w apps/api && npm run build -w apps/web",
-    "typecheck": "npm run typecheck -w apps/api && npm run typecheck -w apps/web"
+    "typecheck": "npm run typecheck -w apps/api && npm run typecheck -w apps/web",
+    "dev:api": "npm run dev -w apps/api",
+    "dev:web": "npm run dev -w apps/web",
+    "test": "tsx --test apps/web/src/lib/quick-replies.test.ts"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
