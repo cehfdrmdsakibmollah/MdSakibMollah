@@ -28,3 +28,10 @@ coverage/
 **/nbr_*.pdf
 **/*payment-proof*
 **/billing-private/
+
+# Cloudflare Workers generated/private state (never commit)
+**/.dev.vars
+**/.dev.vars.*
+**/.open-next/
+**/.wrangler/
+**/cloudflare-env.d.ts
