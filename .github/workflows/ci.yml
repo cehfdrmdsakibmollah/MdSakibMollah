@@ -14,6 +14,9 @@ jobs:
           node-version: '22'
       - name: Install dependencies
         run: npm ci
+      - name: Check Helmet callable CommonJS entrypoint
+        working-directory: apps/api
+        run: node -e "const factory = require('helmet'); if (typeof factory !== 'function' || typeof factory() !== 'function') process.exit(1)"
       - name: Type check apps
         run: npm run typecheck
       - name: Assistant behavior tests

@@ -1,7 +1,7 @@
 import express, {type ErrorRequestHandler} from 'express';
 import http from 'node:http';
 import cors from 'cors';
-import * as helmetModule from 'helmet';
+import {createRequire} from 'node:module';
 import compression from 'compression';
 import {rateLimit} from 'express-rate-limit';
 import {Server as IoServer} from 'socket.io';
@@ -10,9 +10,12 @@ import {connectDb} from './models.js';
 import {getIdentity} from './auth.js';
 import {createRoutes} from './routes.js';
 import {env} from './config.js';
+// Helmet 8 supports a callable CommonJS entrypoint. Use it explicitly to avoid
+// Vercel's TypeScript ESM/default-import interop resolving the module namespace.
+const helmetFactory: () => express.RequestHandler = createRequire(import.meta.url)('helmet');
 const app=express();app.disable('x-powered-by');app.set('trust proxy',1);
 const origins=env.WEB_ORIGIN.split(',').map(s=>s.trim());
-app.use(helmetModule.default());app.use(cors({origin:origins,methods:['GET','POST','PATCH']}));
+app.use(helmetFactory());app.use(cors({origin:origins,methods:['GET','POST','PATCH']}));
 app.use(compression());app.use(express.json({limit:'30kb'}));
 app.use('/api/v1',(_req,res,next)=>{res.setHeader('Cache-Control','no-store');next();});
 app.use('/api/v1',rateLimit({windowMs:60*1000,limit:60,standardHeaders:'draft-8',legacyHeaders:false}));
