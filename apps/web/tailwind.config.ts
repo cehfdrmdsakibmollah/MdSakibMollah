@@ -1,0 +1,3 @@
+import type {Config} from 'tailwindcss';
+const config:Config={content:['./src/**/*.{ts,tsx}'],darkMode:'class',theme:{extend:{fontFamily:{sans:['var(--font-inter)','Inter','system-ui','sans-serif'],display:['var(--font-space)','Space Grotesk','sans-serif']},colors:{electric:'#3b8cff',skyblue:'#11baff'},boxShadow:{glow:'0 0 50px rgba(31,120,255,.22)'},animation:{'float':'float 7s ease-in-out infinite','shimmer':'shimmer 3s linear infinite','marquee':'marquee 32s linear infinite'},keyframes:{float:{'0%,100%':{transform:'translateY(0)'},'50%':{transform:'translateY(-12px)'}},shimmer:{to:{backgroundPosition:'200% center'}},marquee:{to:{transform:'translateX(-50%)'}}}}},plugins:[]};
+export default config;

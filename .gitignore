@@ -1,0 +1,30 @@
+.env
+.env.*
+!.env.example
+node_modules/
+.next/
+dist/
+coverage/
+*.log
+.DS_Store
+.vercel/
+*.tsbuildinfo
+
+# Private credential files (never publish)
+**/atlas-credentials.env
+**/*firebase-adminsdk*.json
+**/*service-account*.json
+**/*serviceAccountKey*.json
+**/google-application-credentials.json
+*.pem
+*.p12
+*.pfx
+*.key
+**/.secrets/
+
+# Personal government documents and billing proofs must never be committed
+**/nid-*.pdf
+**/*tin_certificate*.pdf
+**/nbr_*.pdf
+**/*payment-proof*
+**/billing-private/
