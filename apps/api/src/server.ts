@@ -33,6 +33,15 @@ io.on('connection',socket=>{
   }catch(e){console.error('Join failed:',e);}
  });
 });
+// Vercel Functions start on demand. Ensure Atlas is connected before each API route.
+// Local development still establishes the connection before opening its port.
+app.use('/api/v1',async(_req,_res,next)=>{
+ try { await connectDb(); next(); }
+ catch(error){
+  console.error('[API] MongoDB unavailable:',error instanceof Error?error.name:'unknown error');
+  next(Object.assign(new Error('Database connection temporarily unavailable.'),{status:503,code:'DATABASE_UNAVAILABLE'}));
+ }
+});
 app.use('/api/v1',createRoutes(io));
 app.use((_req,res)=>res.status(404).json({error:'Route not found'}));
 const errors:ErrorRequestHandler=(err,req,res,_next)=>{
@@ -46,7 +55,11 @@ server.on('error',(error:NodeJS.ErrnoException)=>{
  else console.error('[API] HTTP listener failed:',error);
  process.exitCode=1;
 });
-connectDb().then(()=>server.listen(env.PORT,()=>console.log(`API listening on ${env.PORT}`))).catch(err=>{console.error('Database connection failed',err);process.exitCode=1;});
+// Vercel invokes the exported Express handler. A local listener is only for Node dev.
+if (!process.env.VERCEL) {
+ connectDb().then(()=>server.listen(env.PORT,()=>console.log(`API listening on ${env.PORT}`)))
+   .catch(error=>{console.error('Database connection failed:',error instanceof Error?error.name:'unknown');process.exitCode=1;});
+}
 
-// Vercel Express/Node runtime can discover the HTTP server, while local dev uses listen().
-export default server;
+// Export Express directly for Vercel's recognized src/server.ts entry point.
+export default app;

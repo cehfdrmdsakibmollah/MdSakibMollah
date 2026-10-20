@@ -13,6 +13,7 @@ This monorepo is deployed as **two separate Vercel projects** linked to the same
 - Name: `md-sakib-mollah-api`
 - Root directory: `apps/api`
 - Framework preset: **Express** (auto-detected from `src/server.ts`)
+- Production runtime uses the exported Express handler; **do not** set custom `start` or `npm run dev` command. The app opens Port 4000 **only in local development**.
 - Node: **22.x** (or supported patched LTS)
 - Install command: default / npm workspace auto-detection
 - Build command: use framework defaults; do not run `npm run dev`
@@ -35,9 +36,13 @@ Configure encrypted environment variables:
 
 **Do not set** `GOOGLE_APPLICATION_CREDENTIALS` to your Windows path in Vercel. Vercel cannot read `C:\\Users\\...` paths. Use the service account as a secret environment value.
 
+To create this backend after the frontend is already live: **Vercel Dashboard → Add New → Project → Import the same GitHub repository → Project Name `md-sakib-mollah-api` → Root Directory `apps/api` → Framework Express → add Production environment variables → Deploy**. Keep your existing `apps/web` Vercel project; do not replace it.
+
 Verify `https://<API_DOMAIN>/api/v1/health`: should return JSON with `status:ok`, `service:sakib-portfolio-api`, `database:connected`. If database is unavailable, the health route responds 503.
 
 The API uses Socket.IO for optional realtime hints. Chat/dashboard **also poll through HTTP**, so cross-instance realtime state is not required for essential messages. Vercel WebSocket support is available, but for durable cross-instance events use a shared broker rather than assuming an in-memory Socket.IO room is global.
+
+**Backend URL is not the same as the frontend URL.** Copy the exact ready `https://*.vercel.app` hostname from the backend deployment; never use localhost in Vercel.
 
 ### Project 2 — Frontend
 
@@ -45,7 +50,7 @@ The API uses Socket.IO for optional realtime hints. Chat/dashboard **also poll t
 - Root directory: `apps/web`
 - Framework preset: **Next.js**
 - Node: **22.x**.
-- Connect GitHub repository and use default build settings.
+- Connect GitHub repository and use default build settings. Once the backend is deployed, set `API_INTERNAL_URL` in the frontend project's Settings → Environment Variables and **Redeploy** the frontend.
 
 Configure:
 

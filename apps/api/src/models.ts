@@ -32,18 +32,29 @@ const messageSchema=new Schema({
 messageSchema.index({conversationId:1,createdAt:1});
 export const Message = models.Message || model('Message',messageSchema);
 
-export async function connectDb() {
-  if (process.env.NODE_ENV === "development") {
-    dns.setServers(["8.8.8.8", "1.1.1.1"]);
+// Keep a single Atlas connection attempt per Vercel function instance.
+let pendingConnection: Promise<void> | undefined;
+
+export async function connectDb(): Promise<void> {
+  if (mongoose.connection.readyState === 1) return;
+  if (!pendingConnection) {
+    if (process.env.NODE_ENV === "development") {
+      dns.setServers(["8.8.8.8", "1.1.1.1"]);
+    }
+    pendingConnection = mongoose.connect(process.env.MONGODB_URI!, {
+      serverSelectionTimeoutMS: 12000,
+      maxPoolSize: 10,
+    }).then(() => {
+      console.log("MongoDB Atlas connected successfully");
+    }).catch(error => {
+      // A later request may retry after a transient Atlas/network failure.
+      pendingConnection = undefined;
+      throw error;
+    });
   }
-
-  await mongoose.connect(process.env.MONGODB_URI!, {
-    serverSelectionTimeoutMS: 12000,
-    maxPoolSize: 10,
-  });
-
-  console.log("MongoDB Atlas connected successfully");
+  await pendingConnection;
 }
+
 
 
 /** Private satisfaction feedback is collected only from the verified conversation owner.
