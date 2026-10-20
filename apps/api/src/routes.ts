@@ -15,7 +15,10 @@ const objectId=(id:string)=>{if(!mongoose.isValidObjectId(id))throw Object.assig
 const asError=(s:string,status:number)=>Object.assign(new Error(s),{status});
 export function createRoutes(io:IoServer){
  const api=Router();
- api.get('/health',(_req,res)=>res.json({status:'ok',service:'sakib-portfolio-api'}));
+ api.get('/health',(_req,res)=>{
+   const connected=mongoose.connection.readyState===1;
+   res.status(connected?200:503).json({status:connected?'ok':'degraded',service:'sakib-portfolio-api',database:connected?'connected':'unavailable'});
+ });
  api.post('/contact',async(req,res)=>{
    const data=contactSchema.parse(req.body); if(data.website){res.status(200).json({ok:true});return;}
    const {website,...safe}=data; const lead=await Lead.create(safe);
