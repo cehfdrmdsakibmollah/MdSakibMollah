@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {quickReply} from './quick-replies.ts';
+import {quickReply} from './quick-replies';
 
 test('greets visitors without claiming private delivery',()=>{
  const answer=quickReply('Hi');
