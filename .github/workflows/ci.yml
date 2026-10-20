@@ -18,5 +18,7 @@ jobs:
         run: npm run typecheck
       - name: Assistant behavior tests
         run: npm test
+      - name: Check production smoke-test script syntax
+        run: node --check scripts/check-production.mjs
       - name: Production build
         run: npm run build
