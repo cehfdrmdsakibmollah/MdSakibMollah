@@ -36,7 +36,7 @@ jobs:
               const ok=label==='Next.js homepage'
                 ? response.status===200 && contentType.includes('text/html')
                 : response.status===200 && (label==='Chatbot availability' ? summary.online===true : summary.status==='ok');
-              console.log(JSON.stringify({name:label,http:response.status,ok,summary}));
+              console.log(JSON.stringify({name:label,http:response.status,ok,summary,contentType,vercelError:response.headers.get('x-vercel-error'),vercelId:response.headers.get('x-vercel-id')}));
               if(!ok)failures++;
             }catch(error){
               console.log(JSON.stringify({name:label,ok:false,reason:error?.name||'network failure'}));
