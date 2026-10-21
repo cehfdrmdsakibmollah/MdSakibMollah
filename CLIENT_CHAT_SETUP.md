@@ -106,6 +106,14 @@ Source fixes: add an accessible `Skip to main content` keyboard link, include `/
 
 Tests audit the **deployed** site; source updates will not appear there until Vercel deploys the latest main. The audit warns separately for the missing skip link and sitemap Contact URL in an older live deployment; do not claim they are live solely from green GitHub CI. Google OAuth popup completion, Resend delivery and authenticated private-chat read receipts still require separate authorized end-to-end checks.
 
+## Firebase account-switch privacy hardening (21 October 2026)
+
+The persistent React Chat Widget and Client Dashboard now **remount per Firebase user UID**. This ensures that after sign-out or switching accounts on the same browser, the previous account's cached private messages, selected conversation, local drafts, admin data and pending component state are discarded instead of remaining visible in the next user's UI.
+
+The backend now uses explicit tested policies: an authenticated owner may **read** client conversations, a verified client may **read and write only their own** conversation, and the owner cannot impersonate another client through the participant-only message endpoint. Owner replies use the already existing separate `/admin/conversations/:id/reply` route. The existing Firebase signature/email-verification checks remain in place.
+
+These are code-level changes backed by automated policy tests and build checks. A browser-based two-account end-to-end test using real distinct verified Google accounts, including checking client-side owner reply visibility, remains outstanding until authorized accounts are available and the new Vercel version is live. No production messages or user sessions were created by the tests.
+
 ## Security boundaries
 
 - Never post JSON private keys, Base64 service credentials, MongoDB URIs or Resend API keys to GitHub or ChatGPT.
