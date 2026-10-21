@@ -89,6 +89,11 @@ async function main() {
 
     // Music starts only after a deliberate user click. A Pause button appears
     // only after HTMLAudioElement.play() resolves successfully.
+    // The site's analytics consent banner intentionally overlays bottom-left controls.
+    // Decline optional analytics first, just as a privacy-conscious visitor can.
+    const decline = page.getByRole('button', { name: 'Decline' });
+    if (await decline.isVisible()) await decline.click();
+
     const music = page.getByRole('button', { name: 'Play optional ambient music' });
     await music.waitFor({ timeout: 35_000 });
     await music.click();
