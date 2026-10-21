@@ -76,6 +76,16 @@ For improved privacy, client-message and owner-reply notification emails now con
 
 No additional credentials are needed in GitHub. Production requires Render's configured `RESEND_API_KEY`, `RESEND_FROM_EMAIL` for an actually verified sender domain, and `OWNER_NOTIFICATION_EMAIL`. The remaining live test is: after new backend deployment, submit an authorized test client message, check owner inbox, and send an owner reply through the dashboard; confirm receipt with a distinct logged-in client. Never claim a live send occurred based on unit tests.
 
+## Deployment revision checks (no credentials)
+
+To prevent a successful GitHub build from being mistaken for a live deployment:
+
+- Render `GET /api/v1/health` now includes a `revision` field derived only from `RENDER_GIT_COMMIT` if present and valid.
+- Vercel `GET /api/release` returns the deployed `VERCEL_GIT_COMMIT_SHA`, its environment, and no secrets. Vercel project settings must have **Automatically expose System Environment Variables** enabled for the revision field; it can be `null` until configured.
+- On pushes to `main`, GitHub Actions runs `scripts/check-deployed-revisions.mjs` after public smoke tests. It reports missing or older deployments as **warnings**, because a passing code build cannot force a production deployment. It never uses credentials or writes live data.
+- If `/api/release` returns 404, the new frontend version still has not deployed. A Render backend with the correct revision does **not** mean Vercel has caught up.
+- Release checks do not verify actual Google account sign-in, owner/client read receipts, or Resend email delivery.
+
 ## Security boundaries
 
 - Never post JSON private keys, Base64 service credentials, MongoDB URIs or Resend API keys to GitHub or ChatGPT.

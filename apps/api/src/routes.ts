@@ -18,7 +18,10 @@ export function createRoutes(io:IoServer){
  const api=Router();
  api.get('/health',(_req,res)=>{
    const connected=mongoose.connection.readyState===1;
-   res.status(connected?200:503).json({status:connected?'ok':'degraded',service:'sakib-portfolio-api',database:connected?'connected':'unavailable'});
+   // Render sets RENDER_GIT_COMMIT automatically at runtime; never return other env values.
+   const candidate=process.env.RENDER_GIT_COMMIT?.trim()||'';
+   const revision=/^[a-f0-9]{40}$/i.test(candidate)?candidate.toLowerCase():null;
+   res.status(connected?200:503).json({status:connected?'ok':'degraded',service:'sakib-portfolio-api',database:connected?'connected':'unavailable',revision});
  });
  api.post('/contact',async(req,res)=>{
    const data=contactSchema.parse(req.body); if(data.website){res.status(200).json({ok:true});return;}
