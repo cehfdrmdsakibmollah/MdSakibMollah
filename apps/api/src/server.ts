@@ -1,7 +1,7 @@
 import express, {type ErrorRequestHandler} from 'express';
 import http from 'node:http';
 import cors from 'cors';
-import {createRequire} from 'node:module';
+import helmet from 'helmet';
 import compression from 'compression';
 import {rateLimit} from 'express-rate-limit';
 import {Server as IoServer} from 'socket.io';
@@ -10,9 +10,10 @@ import {connectDb} from './models.js';
 import {getIdentity} from './auth.js';
 import {createRoutes} from './routes.js';
 import {env} from './config.js';
-// Helmet 8 supports a callable CommonJS entrypoint. Use it explicitly to avoid
-// Vercel's TypeScript ESM/default-import interop resolving the module namespace.
-const helmetFactory: () => express.RequestHandler = createRequire(import.meta.url)('helmet');
+// Static import is necessary for Vercel's function dependency tracing.
+// Some NodeNext + Vercel TypeScript combinations type the default export as a
+// module namespace; cast only the known middleware factory, not the middleware.
+const helmetFactory = helmet as unknown as () => express.RequestHandler;
 const app=express();app.disable('x-powered-by');app.set('trust proxy',1);
 const origins=env.WEB_ORIGIN.split(',').map(s=>s.trim());
 app.use(helmetFactory());app.use(cors({origin:origins,methods:['GET','POST','PATCH']}));
