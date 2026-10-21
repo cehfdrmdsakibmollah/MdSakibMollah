@@ -27,3 +27,6 @@ jobs:
           # Background music was removed; both PR and main check the live chat-open chime.
           EXPECT_CHAT_CHIME: '1'
         run: node scripts/live-production-smoke.mjs
+      - name: Compare deployed Git revisions against GitHub main (report only)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: node scripts/check-deployed-revisions.mjs
