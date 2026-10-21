@@ -85,15 +85,13 @@ async function main() {
   });
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    // Decline optional analytics before app hydration so its consent banner does
+    // not overlay the bottom-left audio button in first-visit headless Chrome.
+    await page.addInitScript(() => localStorage.setItem('sakib-analytics-consent', 'no'));
     await page.goto(SITE + '/dashboard', { waitUntil: 'domcontentloaded', timeout: 90_000 });
 
     // Music starts only after a deliberate user click. A Pause button appears
     // only after HTMLAudioElement.play() resolves successfully.
-    // The site's analytics consent banner intentionally overlays bottom-left controls.
-    // Decline optional analytics first, just as a privacy-conscious visitor can.
-    const decline = page.getByRole('button', { name: 'Decline' });
-    if (await decline.isVisible()) await decline.click();
-
     const music = page.getByRole('button', { name: 'Play optional ambient music' });
     await music.waitFor({ timeout: 35_000 });
     await music.click();
