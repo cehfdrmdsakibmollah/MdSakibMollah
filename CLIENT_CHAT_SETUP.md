@@ -48,6 +48,15 @@ Opening the floating assistant with a **user click** triggers a single, very sof
 
 Implementation: `apps/web/src/lib/chat-open-chime.ts` called from `apps/web/src/components/chat-widget.tsx`. GitHub Actions `Live production smoke` verifies behavior against the deployed main branch. On PRs, the smoke suite deliberately checks the *currently deployed* version to avoid confusing preview code with production.
 
+## Live verification record — 21 October 2026
+
+- GitHub main and current production were checked before this test. The Next.js frontend lives at `https://mdsakibmollah.vercel.app`, and the Render backend at `https://sakib-portfolio-api-free.onrender.com`.
+- On 21 October, the GitHub Actions **Contact inquiry end-to-end** workflow posted a single clearly marked synthetic inquiry to `/api/backend/contact`; production returned **HTTP 201** and the expected MongoDB document reference. Its presence was checked in Atlas `sakib_portfolio.leads`, then the exact synthetic record was deleted (one deletion; real customer records were untouched). This verifies the public Contact form's backend persistence, not authenticated private messaging.
+- The owner Gmail account and synthetic sender Gmail inbox did **not** show an automated transactional email for that inquiry when checked. The signed-in owner dashboard displayed **Email alerts need setup**. Do not claim website-to-Gmail delivery until verified Resend credentials, a verified sending domain, and a received test email exist.
+- The authenticated **owner dashboard** was visible in a previously open connected browser session. That supports owner session/admin access, but does not identify whether the original sign-in came through Google OAuth vs email/password, and does not prove a client-to-owner reply round trip.
+- Live public music was removed; a short, low-gain chat-opening chime passed headless Chromium verification. The background-music button is absent.
+- The E2E workflow is **manual-only** after the initial test to avoid generating test leads on ordinary pushes or PRs. It writes one identifiable test record when explicitly run. Delete such records after inspection.
+
 ## Security boundaries
 
 - Never post JSON private keys, Base64 service credentials, MongoDB URIs or Resend API keys to GitHub or ChatGPT.
