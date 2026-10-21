@@ -46,3 +46,5 @@ jobs:
           if(failures){console.log('PUBLIC HEALTH CHECKS FAILED:',failures);process.exitCode=1;}
           else console.log('PUBLIC HEALTH CHECKS PASSED; login/message persistence requires signed-in browser testing.');
           NODE
+
+# Recheck after static Helmet import deployment (main de533939)
