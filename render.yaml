@@ -9,7 +9,7 @@ services:
     region: singapore
     buildCommand: npm ci && npm run build -w apps/api
     startCommand: npm run start -w apps/api
-    autoDeployTrigger: commit
+    autoDeployTrigger: checksPass
     envVars:
       - key: NODE_ENV
         value: production
