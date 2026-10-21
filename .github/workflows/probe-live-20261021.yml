@@ -73,3 +73,5 @@ jobs:
 # Confirm read-only production smoke tests and private route authentication boundaries.
 
 # Final checks after pausing the deprecated Vercel Express backend.
+
+# Final non-destructive health checks after verified Firebase Admin key rotation.
