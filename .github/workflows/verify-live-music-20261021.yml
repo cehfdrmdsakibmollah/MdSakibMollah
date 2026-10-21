@@ -1,0 +1,22 @@
+name: Verify published portfolio music asset
+on:
+  push:
+    branches: [diagnostics/live-api-health-20261021]
+  workflow_dispatch:
+jobs:
+  verify-audio:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test live WebM asset after Vercel production deployment
+        run: |
+          node --input-type=module <<'NODE'
+          const url = 'https://mdsakibmollah.vercel.app/audio/funk-power-intro.webm';
+          const response = await fetch(url, {signal: AbortSignal.timeout(45000)});
+          if (!response.ok) throw new Error('Music asset HTTP '+response.status);
+          const type = response.headers.get('content-type') || '';
+          const data = Buffer.from(await response.arrayBuffer());
+          if (data.length < 5000) throw new Error('Audio asset suspiciously small');
+          if (data.subarray(0, 4).toString('hex') !== '1a45dfa3') throw new Error('Not a valid WebM header');
+          if (!type.includes('webm')) throw new Error('Unexpected Content-Type '+type);
+          console.log(JSON.stringify({status:response.status,contentType:type,bytes:data.length,validWebM:true}));
+          NODE
