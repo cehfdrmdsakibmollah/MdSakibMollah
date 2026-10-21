@@ -86,6 +86,14 @@ To prevent a successful GitHub build from being mistaken for a live deployment:
 - If `/api/release` returns 404, the new frontend version still has not deployed. A Render backend with the correct revision does **not** mean Vercel has caught up.
 - Release checks do not verify actual Google account sign-in, owner/client read receipts, or Resend email delivery.
 
+## Mobile, accessibility, SEO and contact quality audit (21 October 2026)
+
+Added read-only GitHub Actions `Production quality audit` to test the **currently live** Vercel site using Chromium at 375px, 768px and 1440px widths. It checks the Home, Contact, Projects and Insights routes for horizontal overflow, page headings, accessible button/input names, image alt attributes, and metadata. It verifies the mobile menu opens and Contact navigation works, and intentionally submits an **empty** Contact form to check required-field validation **without sending a request or writing to MongoDB**. Timing measurements (FCP) are indicative browser-lab observations, not field Core Web Vitals or Lighthouse scoring.
+
+Source fixes: add an accessible `Skip to main content` keyboard link, include `/contact` in sitemap, and default the public metadata base to the actual Vercel production URL if no explicit `NEXT_PUBLIC_SITE_URL` was supplied. Existing valid per-page canonical links remain unchanged.
+
+Tests audit the **deployed** site; source updates will not appear there until Vercel deploys the latest main. The audit warns separately for the missing skip link and sitemap Contact URL in an older live deployment; do not claim they are live solely from green GitHub CI. Google OAuth popup completion, Resend delivery and authenticated private-chat read receipts still require separate authorized end-to-end checks.
+
 ## Security boundaries
 
 - Never post JSON private keys, Base64 service credentials, MongoDB URIs or Resend API keys to GitHub or ChatGPT.
