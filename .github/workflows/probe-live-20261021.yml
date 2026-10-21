@@ -71,3 +71,5 @@ jobs:
 # Recheck after Vercel frontend production API_INTERNAL_URL points at Render Free.
 
 # Confirm read-only production smoke tests and private route authentication boundaries.
+
+# Final checks after pausing the deprecated Vercel Express backend.
