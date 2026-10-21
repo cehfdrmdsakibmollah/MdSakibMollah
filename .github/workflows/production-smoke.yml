@@ -24,6 +24,6 @@ jobs:
         run: test -x /usr/bin/google-chrome
       - name: Check live Vercel, Render, chat chime, FAQ and anonymous security
         env:
-          # PRs test currently deployed production; main pushes test the newly merged release.
-          EXPECT_CHAT_CHIME: ${{ github.event_name == 'pull_request' && '0' || '1' }}
+          # Background music was removed; both PR and main check the live chat-open chime.
+          EXPECT_CHAT_CHIME: '1'
         run: node scripts/live-production-smoke.mjs
