@@ -114,6 +114,18 @@ The backend now uses explicit tested policies: an authenticated owner may **read
 
 These are code-level changes backed by automated policy tests and build checks. A browser-based two-account end-to-end test using real distinct verified Google accounts, including checking client-side owner reply visibility, remains outstanding until authorized accounts are available and the new Vercel version is live. No production messages or user sessions were created by the tests.
 
+## Owner reply "Opened in client chat" acknowledgment
+
+A small, privacy-limited receipt is available only after the **new client frontend and backend** are deployed:
+
+- A verified client opening a chat will acknowledge only their own **owner-authored** reply bubbles that become at least 50% visible in the open chat pane while the browser tab is visible. It does not claim the person actually read or understood the reply, and it does not transmit the private message text.
+- `POST /api/v1/conversations/:id/owner-replies/opened` is authenticated and participant-only, strictly accepts 1–30 MongoDB ObjectIds and scopes any database writes to that conversation's previously unopened **owner** messages.
+- The first valid visibility acknowledgment writes an optional `openedAt` timestamp. A repeat request does not overwrite the original timestamp. Chat GET continues to provide that field; the owner-only dashboard displays `Opened in client chat` or `Not yet opened in client chat`.
+- Previous owner replies remain without receipt until opened in a newer version of the verified client's chat. The presence of historic reply records alone does not verify two-account Google OAuth or that a client saw them.
+- This feature is separate from email delivery: verified Resend sender credentials are still necessary for actual Gmail notifications.
+
+No customer messages or credentials are changed by unit/CI tests. Production verification requires deploying the new version and using a separate verified client session.
+
 ## Security boundaries
 
 - Never post JSON private keys, Base64 service credentials, MongoDB URIs or Resend API keys to GitHub or ChatGPT.

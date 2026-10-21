@@ -27,7 +27,8 @@ const messageSchema=new Schema({
   conversationId:{type:Schema.Types.ObjectId,ref:'Conversation',required:true,index:true},
   sender:{type:String,enum:['client','assistant','owner'],required:true},
   text:{type:String,required:true,maxlength:5000},
-  deliveredBy:{type:String,enum:['person','rule','ai'],default:'person'}
+  deliveredBy:{type:String,enum:['person','rule','ai'],default:'person'},
+  openedAt:{type:Date,default:undefined}
 },timestamps);
 messageSchema.index({conversationId:1,createdAt:1});
 export const Message = models.Message || model('Message',messageSchema);
