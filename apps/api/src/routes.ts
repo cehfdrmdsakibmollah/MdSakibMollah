@@ -1,6 +1,7 @@
 import {Router} from 'express';
 import {z} from 'zod';
 import mongoose from 'mongoose';
+import {rateLimit} from 'express-rate-limit';
 import {Lead,Conversation,Message,Feedback} from './models.js';
 import {requireAuth,requireAdmin} from './auth.js';
 import {assistantReply,publicFaqReply} from './assistant.js';
@@ -78,6 +79,22 @@ export function createRoutes(io:IoServer){
   const [totalLeads,newLeads,activeChats]=await Promise.all([Lead.countDocuments(),Lead.countDocuments({status:'new'}),Conversation.countDocuments({status:'open'})]);
   const feedbackCount=await Feedback.countDocuments();
   res.json({totalLeads,newLeads,activeChats,feedbackCount,emailAlertsConfigured:Boolean(env.RESEND_API_KEY&&env.RESEND_FROM_EMAIL&&env.OWNER_NOTIFICATION_EMAIL)});
+ });
+ // An explicit, owner-only email diagnostic. Never accepts an arbitrary destination
+ // or exposes API keys. A provider 202 means ACCEPTED, not inbox delivery.
+ const notificationTestLimit=rateLimit({windowMs:60*60*1000,limit:2,standardHeaders:'draft-8',legacyHeaders:false});
+ admin.post('/notifications/test',notificationTestLimit,async(_req,res)=>{
+  if(!env.RESEND_API_KEY || !env.RESEND_FROM_EMAIL || !env.OWNER_NOTIFICATION_EMAIL){
+   res.status(503).json({error:'Email notifications are not configured. Set a verified Resend sender and API key on Render.',code:'EMAIL_NOT_CONFIGURED'});
+   return;
+  }
+  const accepted=await sendEmail(env.OWNER_NOTIFICATION_EMAIL,'TEST - Portfolio email notifications',
+   'This is an administrator-requested test from your MD Sakib Mollah portfolio. Check this Gmail inbox to confirm delivery. This is NOT a customer inquiry.');
+  if(!accepted){
+   res.status(502).json({error:'The email provider did not accept the test email. Check the verified sender, Resend settings and Render logs.',code:'EMAIL_PROVIDER_FAILED'});
+   return;
+  }
+  res.status(202).json({ok:true,providerAccepted:true,inboxDeliveryVerified:false,message:'Email provider accepted the test. Confirm receipt in Gmail.'});
  });
  admin.get('/leads',async(_req,res)=>res.json({leads:await Lead.find().sort({createdAt:-1}).limit(150).lean()}));
  admin.get('/feedback',async(_req,res)=>res.json({feedback:await Feedback.find().sort({createdAt:-1}).limit(150).lean()}));
