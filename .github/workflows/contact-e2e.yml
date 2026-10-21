@@ -1,0 +1,23 @@
+name: Contact inquiry end-to-end (one synthetic lead)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - scripts/live-contact-inquiry-test.mjs
+      - .github/workflows/contact-e2e.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  single-test-inquiry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Submit one clearly marked synthetic inquiry
+        run: node scripts/live-contact-inquiry-test.mjs
