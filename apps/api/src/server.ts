@@ -42,7 +42,15 @@ io.on('connection',socket=>{
 app.use('/api/v1',async(_req,_res,next)=>{
  try { await connectDb(); next(); }
  catch(error){
-  console.error('[API] MongoDB unavailable:',error instanceof Error?error.name:'unknown error');
+  const dbError=error as {name?:string;code?:number|string;message?:string;reason?:{type?:string}};
+  const message=typeof dbError?.message==='string'?dbError.message:'';
+  const kind=dbError?.code===18 || /authenticat|bad auth|credentials/i.test(message)?'AUTH'
+    : /querysrv|dns|enotfound|eai_again|eservfail/i.test(message)?'DNS'
+    : /tls|ssl|certificate/i.test(message)?'TLS'
+    : /server selection|timed out|econnrefused|replicaset|no primary|could not connect/i.test(message)?'NETWORK'
+    : 'OTHER';
+  // Never log the Atlas connection string, username, password or raw error text.
+  console.error('[API] MongoDB connection failed', {kind, name:dbError?.name||'UnknownError', code:typeof dbError?.code==='number'?dbError.code:undefined});
   next(Object.assign(new Error('Database connection temporarily unavailable.'),{status:503,code:'DATABASE_UNAVAILABLE'}));
  }
 });
