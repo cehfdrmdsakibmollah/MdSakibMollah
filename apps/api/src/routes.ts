@@ -6,6 +6,7 @@ import {Lead,Conversation,Message,Feedback} from './models.js';
 import {requireAuth,requireAdmin} from './auth.js';
 import {canReadPrivateConversation,canPostClientMessage} from './identity.js';
 import {openedReplySchema,ownerReplyReceiptFilter} from './owner-receipts.js';
+import {recentChatLimit,newestFirstChatSort,chronologicalFromNewest} from './message-window.js';
 import {assistantReply,publicFaqReply} from './assistant.js';
 import {sendEmail} from './notifications.js';
 import {env} from './config.js';
@@ -57,7 +58,9 @@ export function createRoutes(io:IoServer){
    const conversation=await Conversation.findById(objectId(req.params.id));
    if(!conversation) throw asError('Conversation not found',404);
    if(!canReadPrivateConversation(req.identity!,conversation.participantUid))throw asError('Forbidden',403);
-   const messages=await Message.find({conversationId:conversation._id}).sort({createdAt:1}).limit(200).lean();
+   const latestFirst=await Message.find({conversationId:conversation._id})
+     .sort(newestFirstChatSort).limit(recentChatLimit).lean();
+   const messages=chronologicalFromNewest(latestFirst);
    res.json({conversation,messages});
  });
  // A receipt only means a verified participant had an owner's reply visible
