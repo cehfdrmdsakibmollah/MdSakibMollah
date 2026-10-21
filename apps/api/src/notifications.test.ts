@@ -13,7 +13,7 @@ test('transactional notification posts to configured Resend endpoint with safe H
  const previousFetch=globalThis.fetch;
  let calls=0;
  try {
-  globalThis.fetch=(async(input:RequestInfo|URL,init?:RequestInit)=>{
+  globalThis.fetch=(async(input:unknown,init?:RequestInit)=>{
    calls++;
    assert.equal(String(input),'https://api.resend.com/emails');
    assert.equal(init?.method,'POST');
