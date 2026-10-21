@@ -11,7 +11,7 @@
     "typecheck": "npm run typecheck -w apps/api && npm run typecheck -w apps/web",
     "dev:api": "npm run dev -w apps/api",
     "dev:web": "npm run dev -w apps/web",
-    "test": "tsx --test apps/web/src/lib/quick-replies.test.ts"
+    "test": "tsx --test apps/web/src/lib/*.test.ts apps/api/src/*.test.ts"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
