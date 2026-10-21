@@ -88,6 +88,7 @@ try {
    const mobile=page.getByRole('navigation',{name:'Mobile navigation'});
    record('375px mobile menu opens',await mobile.isVisible());
    await mobile.getByRole('link',{name:'Contact'}).click();
+   await page.waitForURL(url=>url.pathname==='/contact',{timeout:15_000});
    record('375px mobile Contact navigation works',new URL(page.url()).pathname==='/contact');
   }
   await page.close();
