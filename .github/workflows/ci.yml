@@ -14,9 +14,14 @@ jobs:
           node-version: '22'
       - name: Install dependencies
         run: npm ci
-      - name: Check Helmet callable CommonJS entrypoint
-        working-directory: apps/api
-        run: node -e "const factory = require('helmet'); if (typeof factory !== 'function' || typeof factory() !== 'function') process.exit(1)"
+      - name: Verify statically imported Helmet middleware
+        run: |
+          grep -Fq "import helmet from 'helmet';" apps/api/src/server.ts
+          if grep -Fq "createRequire(import.meta.url)('helmet')" apps/api/src/server.ts; then
+            echo 'Dynamic require of Helmet is unsupported in Vercel bundles.'
+            exit 1
+          fi
+          node --input-type=module -e "import('helmet').then(m=>{if(typeof m.default !== 'function' || typeof m.default() !== 'function') process.exit(1)})"
       - name: Type check apps
         run: npm run typecheck
       - name: Assistant behavior tests
