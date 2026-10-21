@@ -77,3 +77,5 @@ jobs:
 # Final non-destructive health checks after verified Firebase Admin key rotation.
 
 # Post-revocation health and privacy boundary confirmation.
+
+# Validate existing production paths after auth-policy regression tests merged.
