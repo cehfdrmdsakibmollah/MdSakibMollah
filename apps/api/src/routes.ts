@@ -23,8 +23,16 @@ export function createRoutes(io:IoServer){
  api.post('/contact',async(req,res)=>{
    const data=contactSchema.parse(req.body); if(data.website){res.status(200).json({ok:true});return;}
    const {website,...safe}=data; const lead=await Lead.create(safe);
-   if(env.OWNER_NOTIFICATION_EMAIL) void sendEmail(env.OWNER_NOTIFICATION_EMAIL,`New portfolio inquiry: ${safe.name}`,`${safe.name} (${safe.email})\nCompany: ${safe.company}\nService: ${safe.service}\nBudget: ${safe.budget}\n\n${safe.message}`);
-   void sendEmail(safe.email,'We received your project inquiry',`Hi ${safe.name},\nThanks for contacting MD Sakib Mollah. Your inquiry has been received. Sakib will review it and respond personally; this is an automated confirmation.`);
+   // Wait for provider acceptance (up to the timeout in notifications.ts).
+   // The inquiry remains stored even when email delivery is unavailable.
+   const [ownerAccepted,clientAccepted]=await Promise.all([
+     env.OWNER_NOTIFICATION_EMAIL
+       ? sendEmail(env.OWNER_NOTIFICATION_EMAIL,`New portfolio inquiry: ${safe.name}`,`${safe.name} (${safe.email})\nCompany: ${safe.company}\nService: ${safe.service}\nBudget: ${safe.budget}\n\n${safe.message}`)
+       : Promise.resolve(false),
+     sendEmail(safe.email,'We received your project inquiry',`Hi ${safe.name},\nThanks for contacting MD Sakib Mollah. Your inquiry has been received. Sakib will review it and respond personally; this is an automated confirmation.`)
+   ]);
+   // These booleans mean provider ACCEPTED, not received in Gmail.
+   console.info('[Notification] Contact attempt:',{ownerProviderAccepted:ownerAccepted,clientProviderAccepted:clientAccepted});
    res.status(201).json({ok:true,reference:String(lead._id)});
  });
  // Public informational FAQ; never persists or forwards guest messages.
@@ -57,10 +65,17 @@ export function createRoutes(io:IoServer){
    const clientMessage=await Message.create({conversationId:conversation._id,sender:'client',text,deliveredBy:'person'});
    await Conversation.updateOne({_id:conversation._id},{$set:{lastMessageAt:new Date()}});
    io.to(`conversation:${conversation._id}`).to('owners').emit('conversation:update',{id:String(conversation._id)});
-   if(env.OWNER_NOTIFICATION_EMAIL)void sendEmail(env.OWNER_NOTIFICATION_EMAIL,'New live-chat message from portfolio',`${conversation.participantName} (${conversation.participantEmail}):\n\n${text}`);
+   // Do not email the private message body. The owner reads it after
+   // authenticating in the dashboard. Await provider acceptance before returning.
+   const ownerNotification=env.OWNER_NOTIFICATION_EMAIL
+     ? sendEmail(env.OWNER_NOTIFICATION_EMAIL,'New live-chat message from portfolio',
+         `A client sent a private message. Open the owner dashboard to read and reply:\nhttps://mdsakibmollah.vercel.app/dashboard\n\nConversation reference: ${conversation._id}`)
+     : Promise.resolve(false);
    const reply=await assistantReply(text,history.reverse().map(m=>({sender:m.sender,text:m.text})));
    const botMessage=await Message.create({conversationId:conversation._id,sender:'assistant',text:reply.text,deliveredBy:reply.deliveredBy});
    io.to(`conversation:${conversation._id}`).to('owners').emit('conversation:update',{id:String(conversation._id)});
+   const ownerAccepted=await ownerNotification;
+   console.info('[Notification] Private chat attempt:',{ownerProviderAccepted:ownerAccepted});
    res.status(201).json({messages:[clientMessage,botMessage]});
  });
  // Authenticated feedback is private: only a conversation participant can submit it.
@@ -105,7 +120,9 @@ export function createRoutes(io:IoServer){
    const message=await Message.create({conversationId:conversation._id,sender:'owner',text,deliveredBy:'person'});
    await Conversation.updateOne({_id:conversation._id},{$set:{lastMessageAt:new Date()}});
    io.to(`conversation:${conversation._id}`).emit('conversation:update',{id:String(conversation._id)});
-   void sendEmail(conversation.participantEmail,'Sakib replied to your message',`Hello ${conversation.participantName},\n\n${text}\n\nYou can also read the message in your portfolio chat.`);
+   const clientAccepted=await sendEmail(conversation.participantEmail,'Sakib replied to your message',
+     `Hello ${conversation.participantName},\n\nSakib has replied to your private conversation. Sign in to the portfolio chat to read it:\nhttps://mdsakibmollah.vercel.app\n\nConversation reference: ${conversation._id}`);
+   console.info('[Notification] Owner reply attempt:',{clientProviderAccepted:clientAccepted});
    res.status(201).json({message});
  });
  api.use('/admin',admin);
