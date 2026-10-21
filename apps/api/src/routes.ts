@@ -59,6 +59,28 @@ export function createRoutes(io:IoServer){
    const messages=await Message.find({conversationId:conversation._id}).sort({createdAt:1}).limit(200).lean();
    res.json({conversation,messages});
  });
+ // A receipt only means a verified participant had an owner's reply visible
+ // inside their open chat. No message text or third-party telemetry is sent.
+ api.post('/conversations/:id/owner-replies/opened',async(req,res)=>{
+   const {messageIds}=z.object({
+     messageIds:z.array(z.string().regex(/^[a-f0-9]{24}$/i)).min(1).max(30)
+   }).strict().parse(req.body);
+   const conversation=await Conversation.findById(objectId(req.params.id));
+   if(!conversation)throw asError('Conversation not found',404);
+   if(!canPostClientMessage(req.identity!,conversation.participantUid))
+     throw asError('Forbidden',403);
+   const uniqueIds=[...new Set(messageIds)];
+   const result=await Message.updateMany({
+     _id:{$in:uniqueIds},
+     conversationId:conversation._id,
+     sender:'owner',
+     openedAt:{$exists:false}
+   },{$set:{openedAt:new Date()}});
+   if(result.modifiedCount){
+     io.to('owners').emit('conversation:update',{id:String(conversation._id)});
+   }
+   res.json({ok:true,acknowledged:result.modifiedCount});
+ });
  api.post('/conversations/:id/messages',async(req,res)=>{
    const {text}=messageSchema.parse(req.body);
    const conversation=await Conversation.findById(objectId(req.params.id));
