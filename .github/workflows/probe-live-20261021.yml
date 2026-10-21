@@ -1,0 +1,48 @@
+name: Live Portfolio API Smoke Probe
+on:
+  push:
+    branches:
+      - diagnostics/live-api-health-20261021
+permissions:
+  contents: read
+jobs:
+  public-health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Check production public health endpoints
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          const probes = [
+            ['Express API', 'https://md-sakib-mollah.vercel.app/api/v1/health'],
+            ['Next.js homepage', 'https://mdsakibmollah.vercel.app/'],
+            ['Next.js API proxy', 'https://mdsakibmollah.vercel.app/api/backend/health'],
+            ['Chatbot availability', 'https://mdsakibmollah.vercel.app/api/backend-health'],
+          ];
+          let failures=0;
+          for (const [label,url] of probes) {
+            try {
+              const response=await fetch(url,{signal:AbortSignal.timeout(15000),redirect:'manual'});
+              const contentType=response.headers.get('content-type')||'';
+              let statusCode;
+              let summary={};
+              if(contentType.includes('application/json')){
+                const payload=await response.json();
+                for(const field of ['status','service','database','online','code']){
+                  if (typeof payload?.[field] === 'string' || typeof payload?.[field] === 'boolean') summary[field]=payload[field];
+                }
+              }
+              const ok=label==='Next.js homepage'
+                ? response.status===200 && contentType.includes('text/html')
+                : response.status===200 && (label==='Chatbot availability' ? summary.online===true : summary.status==='ok');
+              console.log(JSON.stringify({name:label,http:response.status,ok,summary}));
+              if(!ok)failures++;
+            }catch(error){
+              console.log(JSON.stringify({name:label,ok:false,reason:error?.name||'network failure'}));
+              failures++;
+            }
+          }
+          if(failures){console.log('PUBLIC HEALTH CHECKS FAILED:',failures);process.exitCode=1;}
+          else console.log('PUBLIC HEALTH CHECKS PASSED; login/message persistence requires signed-in browser testing.');
+          NODE
