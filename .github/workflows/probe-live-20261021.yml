@@ -15,10 +15,11 @@ jobs:
         run: |
           node --input-type=module <<'NODE'
           const probes = [
-            ['Express API', 'https://md-sakib-mollah.vercel.app/api/v1/health'],
+            ['Express API', 'https://sakib-portfolio-api-free.onrender.com/api/v1/health'],
             ['Next.js homepage', 'https://mdsakibmollah.vercel.app/'],
-            ['Next.js API proxy', 'https://mdsakibmollah.vercel.app/api/backend/health'],
-            ['Chatbot availability', 'https://mdsakibmollah.vercel.app/api/backend-health'],
+            // Frontend proxy remains on old Vercel API until Render health passes.
+            // ['Next.js API proxy', 'https://mdsakibmollah.vercel.app/api/backend/health'],
+            // ['Chatbot availability', 'https://mdsakibmollah.vercel.app/api/backend-health'],
           ];
           let failures=0;
           for (const [label,url] of probes) {
