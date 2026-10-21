@@ -43,3 +43,26 @@ test('provider rejection is reported as false rather than an inbox-delivered suc
   assert.equal(await sendEmail('owner@example.test','Test diagnostics','Hello'),false);
  } finally {globalThis.fetch=previousFetch;console.error=previousLog;}
 });
+
+test('onboarding sender refuses other recipients but accepts owner',async()=>{
+ const original=env.RESEND_FROM_EMAIL;
+ const ownerOriginal=env.OWNER_NOTIFICATION_EMAIL;
+ const fetchOriginal=globalThis.fetch;
+ let calls=0;
+ try{
+  env.RESEND_FROM_EMAIL='onboarding@resend.dev';
+  env.OWNER_NOTIFICATION_EMAIL='owner@example.test';
+  globalThis.fetch=(async()=>{
+   calls++;
+   return new Response('{}',{status:202});
+  }) as typeof globalThis.fetch;
+  assert.equal(await sendEmail('other@example.test','test','test'),false);
+  assert.equal(calls,0);
+  assert.equal(await sendEmail('owner@example.test','test','test'),true);
+  assert.equal(calls,1);
+ }finally{
+  env.RESEND_FROM_EMAIL=original;
+  env.OWNER_NOTIFICATION_EMAIL=ownerOriginal;
+  globalThis.fetch=fetchOriginal;
+ }
+});
