@@ -44,24 +44,24 @@ jobs:
             }
           }
           const restrictedRoutes=[
-    ['Owner identity','/api/backend/me','GET'],
-    ['Admin overview','/api/backend/admin/overview','GET'],
-    ['Private conversation','/api/backend/conversations/start','POST'],
-  ];
-  for(const [label,path,method] of restrictedRoutes){
-    try{
-      const response=await fetch('https://mdsakibmollah.vercel.app'+path,{
-        method,headers:method==='POST'?{'content-type':'application/json'}:{},
-        body:method==='POST'?'{}':undefined,
-        signal:AbortSignal.timeout(15000),redirect:'manual'
-      });
-      const protectedCorrectly=response.status===401;
-      console.log(JSON.stringify({name:label,unauthenticatedHttp:response.status,protectedCorrectly}));
-      if(!protectedCorrectly)failures++;
-    }catch(e){console.log(JSON.stringify({name:label,protectedCorrectly:false,error:e?.name||'network'}));failures++;}
-  }
-  if(failures){console.log('PUBLIC HEALTH CHECKS FAILED:',failures);process.exitCode=1;}
-          else console.log('PUBLIC HEALTH CHECKS PASSED; login/message persistence requires signed-in browser testing.');
+          ['Owner identity','/api/backend/me','GET'],
+          ['Admin overview','/api/backend/admin/overview','GET'],
+          ['Private conversation','/api/backend/conversations/start','POST'],
+          ];
+          for(const [label,path,method] of restrictedRoutes){
+          try{
+          const response=await fetch('https://mdsakibmollah.vercel.app'+path,{
+          method,headers:method==='POST'?{'content-type':'application/json'}:{},
+          body:method==='POST'?'{}':undefined,
+          signal:AbortSignal.timeout(15000),redirect:'manual'
+          });
+          const protectedCorrectly=response.status===401;
+          console.log(JSON.stringify({name:label,unauthenticatedHttp:response.status,protectedCorrectly}));
+          if(!protectedCorrectly)failures++;
+          }catch(e){console.log(JSON.stringify({name:label,protectedCorrectly:false,error:e?.name||'network'}));failures++;}
+          }
+          if(failures){console.log('PUBLIC HEALTH CHECKS FAILED:',failures);process.exitCode=1;}
+                    else console.log('PUBLIC HEALTH CHECKS PASSED; login/message persistence requires signed-in browser testing.');
           NODE
 
 # Recheck after static Helmet import deployment (main de533939)
