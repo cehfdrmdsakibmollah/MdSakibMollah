@@ -25,3 +25,16 @@ export function identityFromClaims(claims:VerifiedClaims,adminEmails:ReadonlySet
   admin:adminEmails.has(email)
  };
 }
+
+
+/**
+ * Private conversation policy, applied AFTER verified Firebase authentication.
+ * Owners can read conversations to reply, but cannot impersonate the client
+ * by sending a message through the participant-only endpoint.
+ */
+export function canReadPrivateConversation(identity:Pick<Identity,'uid'|'admin'>,participantUid:string):boolean {
+ return identity.admin || identity.uid===participantUid;
+}
+export function canPostClientMessage(identity:Pick<Identity,'uid'>,participantUid:string):boolean {
+ return identity.uid===participantUid;
+}

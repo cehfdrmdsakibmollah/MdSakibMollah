@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {identityFromClaims} from './identity.js';
+import {identityFromClaims,canReadPrivateConversation,canPostClientMessage} from './identity.js';
 
 const owners=new Set(['owner@example.com']);
 
@@ -34,4 +34,22 @@ test('admin email matching uses a full email, not a suffix',()=>{
  for(const email of ['notowner@example.com','owner@example.com.evil.test']){
   assert.equal(identityFromClaims({uid:'test',email,email_verified:true},owners).admin,false);
  }
+});
+
+test('only the matching verified client may read or write their own private conversation',()=>{
+ const clientA=identityFromClaims({uid:'client-A',email:'a@example.test',email_verified:true},owners);
+ const clientB=identityFromClaims({uid:'client-B',email:'b@example.test',email_verified:true},owners);
+ assert.equal(canReadPrivateConversation(clientA,'client-A'),true);
+ assert.equal(canPostClientMessage(clientA,'client-A'),true);
+ assert.equal(canReadPrivateConversation(clientB,'client-A'),false);
+ assert.equal(canPostClientMessage(clientB,'client-A'),false);
+});
+
+test('verified owner can read client conversation, but cannot impersonate client message writes',()=>{
+ const owner=identityFromClaims({uid:'owner-uid',email:'owner@example.com',email_verified:true},owners);
+ const client=identityFromClaims({uid:'client-uid',email:'client@example.test',email_verified:true},owners);
+ assert.equal(canReadPrivateConversation(owner,client.uid),true);
+ assert.equal(canPostClientMessage(owner,client.uid),false);
+ assert.equal(canReadPrivateConversation(client,owner.uid),false);
+ assert.equal(canPostClientMessage(client,owner.uid),false);
 });

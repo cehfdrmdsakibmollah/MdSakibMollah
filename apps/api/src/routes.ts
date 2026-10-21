@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import {rateLimit} from 'express-rate-limit';
 import {Lead,Conversation,Message,Feedback} from './models.js';
 import {requireAuth,requireAdmin} from './auth.js';
+import {canReadPrivateConversation,canPostClientMessage} from './identity.js';
 import {assistantReply,publicFaqReply} from './assistant.js';
 import {sendEmail} from './notifications.js';
 import {env} from './config.js';
@@ -54,7 +55,7 @@ export function createRoutes(io:IoServer){
  api.get('/conversations/:id/messages',async(req,res)=>{
    const conversation=await Conversation.findById(objectId(req.params.id));
    if(!conversation) throw asError('Conversation not found',404);
-   if(conversation.participantUid!==req.identity!.uid && !req.identity!.admin)throw asError('Forbidden',403);
+   if(!canReadPrivateConversation(req.identity!,conversation.participantUid))throw asError('Forbidden',403);
    const messages=await Message.find({conversationId:conversation._id}).sort({createdAt:1}).limit(200).lean();
    res.json({conversation,messages});
  });
@@ -62,7 +63,7 @@ export function createRoutes(io:IoServer){
    const {text}=messageSchema.parse(req.body);
    const conversation=await Conversation.findById(objectId(req.params.id));
    if(!conversation)throw asError('Conversation not found',404);
-   if(conversation.participantUid!==req.identity!.uid)throw asError('Forbidden',403);
+   if(!canPostClientMessage(req.identity!,conversation.participantUid))throw asError('Forbidden',403);
    if(conversation.status==='closed')throw asError('Conversation is closed',409);
    const history=await Message.find({conversationId:conversation._id}).sort({createdAt:-1}).limit(6).lean();
    const clientMessage=await Message.create({conversationId:conversation._id,sender:'client',text,deliveredBy:'person'});
@@ -86,7 +87,7 @@ export function createRoutes(io:IoServer){
    const {rating,comment}=feedbackSchema.parse(req.body);
    const conversation=await Conversation.findById(objectId(req.params.id));
    if(!conversation)throw asError('Conversation not found',404);
-   if(conversation.participantUid!==req.identity!.uid)throw asError('Forbidden',403);
+   if(!canPostClientMessage(req.identity!,conversation.participantUid))throw asError('Forbidden',403);
    const feedback=await Feedback.findOneAndUpdate({conversationId:conversation._id},
      {$set:{participantUid:req.identity!.uid,rating,comment}},
      {upsert:true,new:true,runValidators:true,setDefaultsOnInsert:true});

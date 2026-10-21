@@ -5,7 +5,14 @@ import FeedbackPanel from '@/components/feedback-panel';
 import {getIdTokenResult} from 'firebase/auth';
 import EmailNotificationCheck from '@/components/email-notification-check';
 type Overview={totalLeads:number;newLeads:number;activeChats:number;feedbackCount:number;emailAlertsConfigured:boolean};
-export default function Dashboard(){const{user,loading,setAuthOpen}=useAuth();const[admin,setAdmin]=useState(false);const[checking,setChecking]=useState(true);const[overview,setOverview]=useState<Overview|null>(null);const[leads,setLeads]=useState<Lead[]>([]);const[chats,setChats]=useState<Conversation[]>([]);const[feedback,setFeedback]=useState<ClientFeedback[]>([]);const[selected,setSelected]=useState<string|null>(null);const[messages,setMessages]=useState<Message[]>([]);const[reply,setReply]=useState('');const[busy,setBusy]=useState(false);const[error,setError]=useState('');const[tab,setTab]=useState<'inbox'|'leads'|'feedback'>('inbox');
+// Remount the entire private dashboard on a Firebase identity change.
+// Stale admin, conversation, message, and lead state must never survive a sign-out
+// or account switch in the same browser session.
+export default function Dashboard(){
+ const {user}=useAuth();
+ return <DashboardSession key={user?.uid??'signed-out'} />;
+}
+function DashboardSession(){const{user,loading,setAuthOpen}=useAuth();const[admin,setAdmin]=useState(false);const[checking,setChecking]=useState(true);const[overview,setOverview]=useState<Overview|null>(null);const[leads,setLeads]=useState<Lead[]>([]);const[chats,setChats]=useState<Conversation[]>([]);const[feedback,setFeedback]=useState<ClientFeedback[]>([]);const[selected,setSelected]=useState<string|null>(null);const[messages,setMessages]=useState<Message[]>([]);const[reply,setReply]=useState('');const[busy,setBusy]=useState(false);const[error,setError]=useState('');const[tab,setTab]=useState<'inbox'|'leads'|'feedback'>('inbox');
  const[signInMethod,setSignInMethod]=useState('Checking…');
  useEffect(()=>{
   if(!user){setSignInMethod('Not signed in');return;}
