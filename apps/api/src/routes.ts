@@ -3,7 +3,7 @@ import {z} from 'zod';
 import mongoose from 'mongoose';
 import {Lead,Conversation,Message,Feedback} from './models.js';
 import {requireAuth,requireAdmin} from './auth.js';
-import {assistantReply} from './assistant.js';
+import {assistantReply,publicFaqReply} from './assistant.js';
 import {sendEmail} from './notifications.js';
 import {env} from './config.js';
 import type {Server as IoServer} from 'socket.io';
@@ -25,6 +25,12 @@ export function createRoutes(io:IoServer){
    if(env.OWNER_NOTIFICATION_EMAIL) void sendEmail(env.OWNER_NOTIFICATION_EMAIL,`New portfolio inquiry: ${safe.name}`,`${safe.name} (${safe.email})\nCompany: ${safe.company}\nService: ${safe.service}\nBudget: ${safe.budget}\n\n${safe.message}`);
    void sendEmail(safe.email,'We received your project inquiry',`Hi ${safe.name},\nThanks for contacting MD Sakib Mollah. Your inquiry has been received. Sakib will review it and respond personally; this is an automated confirmation.`);
    res.status(201).json({ok:true,reference:String(lead._id)});
+ });
+ // Public informational FAQ; never persists or forwards guest messages.
+ api.post('/assistant/faq',async(req,res)=>{
+  const {question}=z.object({question:clean.min(1).max(600)}).parse(req.body);
+  const answer=publicFaqReply(question);
+  res.json({answer:answer.text,matched:answer.matched,sentToOwner:false,persisted:false});
  });
  api.use(requireAuth);
  api.get('/me', (req,res)=>res.json({user:req.identity}));
@@ -71,7 +77,7 @@ export function createRoutes(io:IoServer){
  admin.get('/overview',async(_req,res)=>{
   const [totalLeads,newLeads,activeChats]=await Promise.all([Lead.countDocuments(),Lead.countDocuments({status:'new'}),Conversation.countDocuments({status:'open'})]);
   const feedbackCount=await Feedback.countDocuments();
-  res.json({totalLeads,newLeads,activeChats,feedbackCount});
+  res.json({totalLeads,newLeads,activeChats,feedbackCount,emailAlertsConfigured:Boolean(env.RESEND_API_KEY&&env.RESEND_FROM_EMAIL&&env.OWNER_NOTIFICATION_EMAIL)});
  });
  admin.get('/leads',async(_req,res)=>res.json({leads:await Lead.find().sort({createdAt:-1}).limit(150).lean()}));
  admin.get('/feedback',async(_req,res)=>res.json({feedback:await Feedback.find().sort({createdAt:-1}).limit(150).lean()}));
