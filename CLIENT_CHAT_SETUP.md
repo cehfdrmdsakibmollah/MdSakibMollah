@@ -40,6 +40,18 @@ The free Render instance blocks direct SMTP connections on common mail ports. Th
 
 If a custom sender domain is unavailable, continue using the **Dashboard inbox and Contact page** for messages. Do not display false email-delivery claims.
 
+### Two-stage Resend setup: owner-only test before full domain verification
+
+A verified custom domain is **not required to test delivery to the email address belonging to your own Resend account**. The temporary shared sender `onboarding@resend.dev` is for testing only.
+
+**Stage A — owner Gmail test (no custom domain):** In the Resend dashboard confirm the Resend account's email is exactly the configured `OWNER_NOTIFICATION_EMAIL`. Create a *Send-only* API key. Enter the key directly into the Render environment as `RESEND_API_KEY` (never into chat/GitHub), and set `RESEND_FROM_EMAIL=onboarding@resend.dev`. Do not change the configured owner address. Redeploy Render, then request the owner-only diagnostic email from the authenticated dashboard **after the new frontend release is deployed**. Confirm the message actually arrives in Gmail and is accepted/delivered in Resend logs. The backend deliberately refuses to send customer confirmations and client reply notifications when using this shared testing sender.
+
+**Stage B — actual customer notifications:** Verify a domain you control in Resend, then replace `RESEND_FROM_EMAIL` with an address on that verified domain. This is necessary before sending confirmation/reply emails to arbitrary clients. Check SPF/DKIM verification in Resend. Merely setting a nonempty string does not prove domain verification or deliverability.
+
+Owner-only test mode does **not** make the site a complete production email delivery system. Missing API key or mismatched Resend account email prevents the test. Owner email notification acceptance is not equivalent to inbox delivery.
+
+The Admin Dashboard also reports the *current Firebase ID token's sign-in provider* after the frontend update. Conversations with the same Firebase UID as the owner account are labeled **Owner self-test · not an external client**. A real distinct-client round trip still requires a separate verified Firebase user account and manual check of client-side reply visibility.
+
 ## 4. Very quiet chat-open sound (replaces music)
 
 Background music was removed at the owner's request. The site does **not** mount an AmbientMusic component, display a Music control, or serve `/audio/funk-power-intro.webm`.
