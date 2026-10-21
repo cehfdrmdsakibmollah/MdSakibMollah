@@ -1,0 +1,26 @@
+name: Production quality audit
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-seo-accessibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install headless browser driver outside the app
+        run: npm install --prefix /tmp/portfolio-smoke --no-save --no-package-lock --no-audit --no-fund playwright-core@1.56.1
+      - name: Ensure Chrome is present
+        run: test -x /usr/bin/google-chrome
+      - name: Audit current live site without submitting or changing data
+        run: node scripts/live-quality-audit.mjs

@@ -1,6 +1,6 @@
 export const site={
  name:'MD Sakib Mollah',role:'Full-Stack Web, Mobile & AI Developer',
- url:process.env.NEXT_PUBLIC_SITE_URL||'http://localhost:3000',
+ url:process.env.NEXT_PUBLIC_SITE_URL||(process.env.NODE_ENV==='production'?'https://mdsakibmollah.vercel.app':'http://localhost:3000'),
  description:'MD Sakib Mollah builds modern full-stack web experiences, responsive React apps, Firebase-powered solutions, mobile applications and AI integrations. Explore projects and get in touch.',
  github:'https://github.com/cehfdrmdsakibmollah',
  linkedin:'https://www.linkedin.com/in/cehfdrmdsakibmollah',
