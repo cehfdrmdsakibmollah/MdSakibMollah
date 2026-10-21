@@ -17,9 +17,8 @@ jobs:
           const probes = [
             ['Express API', 'https://sakib-portfolio-api-free.onrender.com/api/v1/health'],
             ['Next.js homepage', 'https://mdsakibmollah.vercel.app/'],
-            // Frontend proxy remains on old Vercel API until Render health passes.
-            // ['Next.js API proxy', 'https://mdsakibmollah.vercel.app/api/backend/health'],
-            // ['Chatbot availability', 'https://mdsakibmollah.vercel.app/api/backend-health'],
+            ['Next.js API proxy', 'https://mdsakibmollah.vercel.app/api/backend/health'],
+            ['Chatbot availability', 'https://mdsakibmollah.vercel.app/api/backend-health'],
           ];
           let failures=0;
           for (const [label,url] of probes) {
@@ -51,3 +50,5 @@ jobs:
 # Recheck after static Helmet import deployment (main de533939)
 
 # Render Atlas non-SRV connection & scoped DB user health verification.
+
+# Recheck after Vercel frontend production API_INTERNAL_URL points at Render Free.
