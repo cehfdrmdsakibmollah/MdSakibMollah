@@ -22,5 +22,8 @@ jobs:
         run: npm install --prefix /tmp/portfolio-smoke --no-save --no-package-lock --no-audit --no-fund playwright-core@1.56.1
       - name: Ensure Chromium is available
         run: test -x /usr/bin/google-chrome
-      - name: Check live Vercel, Render, music, FAQ, anonymous security and browser controls
+      - name: Check live Vercel, Render, chat chime, FAQ and anonymous security
+        env:
+          # PRs test currently deployed production; main pushes test the newly merged release.
+          EXPECT_CHAT_CHIME: ${{ github.event_name == 'pull_request' && '0' || '1' }}
         run: node scripts/live-production-smoke.mjs
