@@ -1,0 +1,26 @@
+name: Live production smoke
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser test driver outside the app
+        run: npm install --prefix /tmp/portfolio-smoke --no-save --no-package-lock --no-audit --no-fund playwright-core@1.56.1
+      - name: Ensure Chromium is available
+        run: test -x /usr/bin/google-chrome
+      - name: Check live Vercel, Render, music, FAQ, anonymous security and browser controls
+        run: node scripts/live-production-smoke.mjs
