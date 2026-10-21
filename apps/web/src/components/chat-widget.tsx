@@ -53,8 +53,25 @@ export default function ChatWidget(){
   e.preventDefault();const value=text.trim();if(!value||busy)return;
   setText('');setError('');
   if(!verified||!conversation||online===false){
-   appendLocal('client',value);appendLocal('assistant',quickReply(value));
-   if(verified)setError('Offline assistant only: your question was NOT sent or saved for Sakib. The backend may be waking up; retry shortly or use the contact form.');
+   appendLocal('client',value);
+   setBusy(true);
+   try {
+    if(online!==false){
+     const res=await fetch('/api/backend/assistant/faq',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({question:value}),cache:'no-store',signal:AbortSignal.timeout(30000)
+     });
+     if(!res.ok)throw Error('FAQ service unavailable');
+     const data=await res.json() as {answer:string;persisted:boolean;sentToOwner:boolean};
+     if(typeof data.answer!=='string'||data.sentToOwner!==false||data.persisted!==false)throw Error('Invalid FAQ response');
+     appendLocal('assistant',data.answer);
+    }else appendLocal('assistant',quickReply(value));
+   }catch {
+    appendLocal('assistant',quickReply(value));
+   }finally {setBusy(false);}
+   setError(verified
+    ?'Your message was NOT sent or saved for Sakib. The private conversation may still be connecting. Retry once it is ready.'
+    :'This informational reply was NOT sent to Sakib. Sign in to send a private message, or use the Contact page.');
    return;
   }
   setBusy(true);
@@ -67,13 +84,13 @@ export default function ChatWidget(){
  return <>
  <button onClick={()=>setOpen(v=>!v)} aria-label={open?'Close live chat':'Open portfolio assistant'} aria-expanded={open} className="fixed bottom-5 right-5 sm:bottom-7 sm:right-7 z-50 h-16 w-16 rounded-2xl grid place-items-center text-white bg-blue-600 hover:bg-blue-500 shadow-[0_14px_50px_rgba(29,100,255,.42)] transition-transform hover:scale-105">{open?<X size={26}/>:<MessageCircle size={27}/>}<span className={`absolute -top-1 -right-1 h-3 w-3 rounded-full border-2 border-[#081629] ${online===false?'bg-amber-400':online===null?'bg-slate-400':'bg-emerald-400'}`}/></button>
  {open&&<section role="dialog" aria-modal="false" aria-label="Portfolio assistant and client messages" className="fixed bottom-24 sm:bottom-28 right-4 sm:right-7 z-50 w-[calc(100vw-2rem)] sm:w-[390px] h-[min(630px,78dvh)] surface shadow-[0_20px_80px_rgba(0,0,0,.3)] rounded-[24px] overflow-hidden flex flex-col">
- <div className="p-5 bg-gradient-to-r from-blue-700 to-blue-500 text-white flex items-center justify-between"><div className="flex items-center gap-3"><div className="h-11 w-11 rounded-xl bg-white/15 grid place-items-center"><Bot size={25}/></div><div><p className="font-display font-bold">Ask Sakib’s assistant</p><p className="text-xs text-blue-100 mt-1">FAQs • Private messages when connected</p></div></div><button onClick={()=>setOpen(false)} aria-label="Minimize chat"><Minimize2 size={18}/></button></div>
+ <div className="p-5 bg-gradient-to-r from-blue-700 to-blue-500 text-white flex items-center justify-between"><div className="flex items-center gap-3"><div className="h-11 w-11 rounded-xl bg-white/15 grid place-items-center"><Bot size={25}/></div><div><p className="font-display font-bold">Ask Sakib’s assistant</p><p className="text-xs text-blue-100 mt-1">Portfolio FAQs • Sign in for personal replies</p></div></div><button onClick={()=>setOpen(false)} aria-label="Minimize chat"><Minimize2 size={18}/></button></div>
  <div className="px-4 py-2 border-b flex justify-between items-center text-xs" style={{borderColor:'var(--border)'}}><span className="flex gap-2 items-center">{online?<Wifi size={14} className="text-emerald-500"/>:<WifiOff size={14} className="text-amber-500"/>}{online?'Backend connected':online===null?'Checking backend…':'Offline FAQs available'}</span><button onClick={()=>void checkHealth()} className="text-blue-500 font-semibold">Recheck</button></div>
  <div className="flex-1 overflow-y-auto p-4 space-y-4" aria-live="polite">
  <div className="rounded-2xl bg-blue-500/10 text-sm p-4 leading-6">Hi! 👋 Ask about web, mobile, AI, services and project pricing. FAQs work offline. <strong>Personal messages are saved only when the backend confirms delivery.</strong></div>
  {!verified&&<div className="rounded-xl p-3 border text-xs leading-6" style={{borderColor:'var(--border)'}}><ShieldCheck size={17} className="inline text-blue-500 mr-2"/>Sign in with Google or a verified email for private messages. <button className="text-blue-500 underline font-semibold" onClick={()=>setAuthOpen(true)}>Sign in</button></div>}
  {messages.map(m=><div key={m._id} className={`flex ${m.sender==='client'?'justify-end':'justify-start'}`}><div className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-6 ${m.sender==='client'?'bg-blue-600 text-white':'surface'}`}><span className="text-[10px] opacity-70 uppercase font-semibold flex items-center gap-1 mb-1">{m.sender==='client'?<><UserRound size={12}/> You · sent</>:m.sender==='owner'?'Sakib · Personal reply':<><Bot size={12}/> Automated reply</>}</span><p className="whitespace-pre-wrap break-words">{m.text}</p></div></div>)}
- {localMessages.map(m=><div key={m.id} className={`flex ${m.sender==='client'?'justify-end':'justify-start'}`}><div className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-6 ${m.sender==='client'?'bg-slate-700 text-white':'surface'}`}><span className="text-[10px] font-bold opacity-70 uppercase block mb-1">{m.sender==='client'?'Local question · not sent':'Offline FAQ assistant'}</span><p className="whitespace-pre-wrap">{m.text}</p></div></div>)}
+ {localMessages.map(m=><div key={m.id} className={`flex ${m.sender==='client'?'justify-end':'justify-start'}`}><div className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-6 ${m.sender==='client'?'bg-slate-700 text-white':'surface'}`}><span className="text-[10px] font-bold opacity-70 uppercase block mb-1">{m.sender==='client'?'Local question · not sent':'Portfolio FAQ · not sent'}</span><p className="whitespace-pre-wrap">{m.text}</p></div></div>)}
  {busy&&<p className="text-xs muted flex gap-2 items-center"><LoaderCircle size={14} className="animate-spin"/> Sending and awaiting reply…</p>}
  <div ref={endRef}/></div>
  {error&&<p role="alert" className="text-amber-600 dark:text-amber-400 text-xs px-4 pb-2">{error}</p>}
