@@ -8,6 +8,7 @@ process.env.RESEND_API_KEY='resend-fake-test-key';
 process.env.RESEND_FROM_EMAIL='Portfolio <notifications@example.test>';
 
 const {sendEmail}=await import('./notifications.js');
+const {env}=await import('./config.js');
 
 test('transactional notification posts to configured Resend endpoint with safe HTML and timeout',async()=>{
  const previousFetch=globalThis.fetch;
