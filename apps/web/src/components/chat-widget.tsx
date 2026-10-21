@@ -6,6 +6,7 @@ import ChatFeedback from './chat-feedback';
 import {useAuth} from './providers';
 import {callApi,type Message,type Conversation} from '@/lib/api';
 import {quickReply} from '@/lib/quick-replies';
+import {playChatOpenChime} from '@/lib/chat-open-chime';
 type LocalMessage={id:string;sender:'client'|'assistant';text:string};
 export default function ChatWidget(){
  const {user,setAuthOpen}=useAuth();
@@ -82,7 +83,7 @@ export default function ChatWidget(){
   finally{setBusy(false)}
  }
  return <>
- <button onClick={()=>setOpen(v=>!v)} aria-label={open?'Close live chat':'Open portfolio assistant'} aria-expanded={open} className="fixed bottom-5 right-5 sm:bottom-7 sm:right-7 z-50 h-16 w-16 rounded-2xl grid place-items-center text-white bg-blue-600 hover:bg-blue-500 shadow-[0_14px_50px_rgba(29,100,255,.42)] transition-transform hover:scale-105">{open?<X size={26}/>:<MessageCircle size={27}/>}<span className={`absolute -top-1 -right-1 h-3 w-3 rounded-full border-2 border-[#081629] ${online===false?'bg-amber-400':online===null?'bg-slate-400':'bg-emerald-400'}`}/></button>
+ <button onClick={()=>{if(!open)playChatOpenChime();setOpen(v=>!v)}} aria-label={open?'Close live chat':'Open portfolio assistant'} aria-expanded={open} className="fixed bottom-5 right-5 sm:bottom-7 sm:right-7 z-50 h-16 w-16 rounded-2xl grid place-items-center text-white bg-blue-600 hover:bg-blue-500 shadow-[0_14px_50px_rgba(29,100,255,.42)] transition-transform hover:scale-105">{open?<X size={26}/>:<MessageCircle size={27}/>}<span className={`absolute -top-1 -right-1 h-3 w-3 rounded-full border-2 border-[#081629] ${online===false?'bg-amber-400':online===null?'bg-slate-400':'bg-emerald-400'}`}/></button>
  {open&&<section role="dialog" aria-modal="false" aria-label="Portfolio assistant and client messages" className="fixed bottom-24 sm:bottom-28 right-4 sm:right-7 z-50 w-[calc(100vw-2rem)] sm:w-[390px] h-[min(630px,78dvh)] surface shadow-[0_20px_80px_rgba(0,0,0,.3)] rounded-[24px] overflow-hidden flex flex-col">
  <div className="p-5 bg-gradient-to-r from-blue-700 to-blue-500 text-white flex items-center justify-between"><div className="flex items-center gap-3"><div className="h-11 w-11 rounded-xl bg-white/15 grid place-items-center"><Bot size={25}/></div><div><p className="font-display font-bold">Ask Sakib’s assistant</p><p className="text-xs text-blue-100 mt-1">Portfolio FAQs • Sign in for personal replies</p></div></div><button onClick={()=>setOpen(false)} aria-label="Minimize chat"><Minimize2 size={18}/></button></div>
  <div className="px-4 py-2 border-b flex justify-between items-center text-xs" style={{borderColor:'var(--border)'}}><span className="flex gap-2 items-center">{online?<Wifi size={14} className="text-emerald-500"/>:<WifiOff size={14} className="text-amber-500"/>}{online?'Backend connected':online===null?'Checking backend…':'Offline FAQs available'}</span><button onClick={()=>void checkHealth()} className="text-blue-500 font-semibold">Recheck</button></div>
