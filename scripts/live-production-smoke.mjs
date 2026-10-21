@@ -77,6 +77,29 @@ async function main() {
   });
   assert.equal(response.status, 401, 'Anonymous private chat creation must be 401');
   console.log('PASS: private identity, admin, and chat reject anonymous requests');
+  // Test the newly deployed owner-only notification diagnostic without credentials:
+  // an unauthenticated caller must NOT be able to send an email or trigger work.
+  response = await request(SITE + '/api/backend/admin/notifications/test', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}',
+  });
+  assert.equal(response.status, 401, 'Anonymous email test request must be rejected before Resend');
+  const rejectedEmailTest = await response.json();
+  assert.ok(rejectedEmailTest.code === 'AUTH_REQUIRED' || /Sign in/i.test(rejectedEmailTest.error || ''));
+  console.log('PASS: owner email diagnostic is inaccessible to unsigned visitors (401)');
+
+  // Owner replies cannot be forged by an anonymous caller. The ObjectId is a
+  // deliberately nonexistent dummy; no MongoDB document is written.
+  response = await request(SITE + '/api/backend/admin/conversations/000000000000000000000000/reply', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: 'TEST_ONLY_NO_ACTUAL_DELIVERY' }),
+  });
+  assert.equal(response.status, 401, 'Anonymous owner reply must be rejected');
+  console.log('PASS: fake owner replies are denied (401)');
+
+
 
   response = await request(SITE + '/api/backend/assistant/faq', {
     method: 'POST',
