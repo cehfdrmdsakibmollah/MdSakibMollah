@@ -1,6 +1,8 @@
 import {NextRequest,NextResponse} from 'next/server';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
+// Render Free can take about a minute to wake; Hobby Fluid Compute supports this window.
+export const maxDuration=120;
 const configured = process.env.API_INTERNAL_URL?.trim();
 const internal = (configured || (process.env.NODE_ENV !== 'production' ? 'http://127.0.0.1:4000/api/v1' : '')).replace(/\/$/,'');
 function validBackend(): boolean {
@@ -25,12 +27,12 @@ async function proxy(request:NextRequest,{params}:{params:Promise<{path:string[]
  if(bearer && /^Bearer [A-Za-z0-9._-]+$/.test(bearer))headers.set('authorization',bearer);
  if(request.method!=='GET'&&request.method!=='HEAD')headers.set('content-type','application/json');
  try{
-  const response=await fetch(target,{method:request.method,headers,body:request.method==='GET'||request.method==='HEAD'?undefined:await request.text(),cache:'no-store',signal:AbortSignal.timeout(20000)});
+  const response=await fetch(target,{method:request.method,headers,body:request.method==='GET'||request.method==='HEAD'?undefined:await request.text(),cache:'no-store',signal:AbortSignal.timeout(90000)});
   const content=await response.text();
   return new NextResponse(content,{status:response.status,headers:{'content-type':response.headers.get('content-type')||'application/json','cache-control':'no-store'}});
  }catch(error){
   console.error('Portfolio API unavailable:',error instanceof Error?error.message:'Unknown');
-  return NextResponse.json({error:'Backend is offline or unreachable. Start the API on port 4000 and check your MongoDB connection. This message was not delivered.'},{status:503});
+  return NextResponse.json({error:'Backend is unavailable or waking up. Please retry in a moment; your message was not delivered.'},{status:503});
  }
 }
 export {proxy as GET,proxy as POST,proxy as PATCH};

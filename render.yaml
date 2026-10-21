@@ -1,0 +1,27 @@
+# MD Sakib Mollah Portfolio — free Express backend.
+# Connect this GitHub repo using Render Dashboard → New → Blueprint.
+# Never place credentials, JWTs, or Firebase private keys in this file.
+services:
+  - type: web
+    name: sakib-portfolio-api-free
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci && npm run build -w apps/api
+    startCommand: npm run start -w apps/api
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 22
+      - key: WEB_ORIGIN
+        value: https://mdsakibmollah.vercel.app
+      - key: FIREBASE_PROJECT_ID
+        value: mdsakibmollahportfolio
+      - key: ADMIN_EMAILS
+        value: ceh.fdr.mdsakibmollah@gmail.com
+      - key: MONGODB_URI
+        sync: false
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON_B64
+        sync: false

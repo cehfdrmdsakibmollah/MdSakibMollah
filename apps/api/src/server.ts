@@ -69,8 +69,15 @@ server.on('error',(error:NodeJS.ErrnoException)=>{
 });
 // Vercel invokes the exported Express handler. A local listener is only for Node dev.
 if (!process.env.VERCEL) {
- connectDb().then(()=>server.listen(env.PORT,()=>console.log(`API listening on ${env.PORT}`)))
-   .catch(error=>{console.error('Database connection failed:',error instanceof Error?error.name:'unknown');process.exitCode=1;});
+ if (process.env.RENDER) {
+  // Free Render instances must bind to the assigned port to accept a cold-start request.
+  // Per-request middleware connects to Atlas and reports 503 until access is configured.
+  // Listen on 0.0.0.0; do not block startup on Atlas allowlisting.
+  server.listen(env.PORT,'0.0.0.0',()=>console.log(`API listening on ${env.PORT} (Render)`));
+ } else {
+  connectDb().then(()=>server.listen(env.PORT,()=>console.log(`API listening on ${env.PORT}`)))
+    .catch(error=>{console.error('Database connection failed:',error instanceof Error?error.name:'unknown');process.exitCode=1;});
+ }
 }
 
 // Export Express directly for Vercel's recognized src/server.ts entry point.

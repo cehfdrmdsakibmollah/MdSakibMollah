@@ -1,6 +1,7 @@
 import {NextResponse} from 'next/server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const maxDuration = 120;
 
 export async function GET() {
  const configured = process.env.API_INTERNAL_URL?.trim();
@@ -10,7 +11,7 @@ export async function GET() {
  }
  try {
    const target = new URL(base.replace(/\/$/,'')+'/health');
-   const response = await fetch(target,{signal:AbortSignal.timeout(3500),cache:'no-store'});
+   const response = await fetch(target,{signal:AbortSignal.timeout(80000),cache:'no-store'});
    return NextResponse.json({online:response.ok},{status:response.ok?200:503});
  } catch {
    return NextResponse.json({online:false},{status:503});

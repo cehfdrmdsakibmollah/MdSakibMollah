@@ -29,7 +29,7 @@ export default function ChatWidget(){
   try{const result=await callApi<{messages:Message[]}>(`/conversations/${id}/messages`,{},user);setMessages(result.messages);setOnline(true);if(!silent)setError('')}
   catch(e){if(!silent)setError(e instanceof Error?e.message:'Could not refresh messages')}
  },[user]);
- useEffect(()=>{if(!open)return;void checkHealth();const timer=setInterval(()=>void checkHealth(),15000);return()=>clearInterval(timer)},[open,checkHealth]);
+ useEffect(()=>{if(!open)return;void checkHealth();const timer=setInterval(()=>void checkHealth(),120000);return()=>clearInterval(timer)},[open,checkHealth]);
  useEffect(()=>{
   if(!open||!verified||!user)return;
   let cancelled=false;
@@ -54,7 +54,7 @@ export default function ChatWidget(){
   setText('');setError('');
   if(!verified||!conversation||online===false){
    appendLocal('client',value);appendLocal('assistant',quickReply(value));
-   if(verified)setError('Offline assistant only: your question was NOT sent or saved for Sakib. Start the API and retry through the contact form.');
+   if(verified)setError('Offline assistant only: your question was NOT sent or saved for Sakib. The backend may be waking up; retry shortly or use the contact form.');
    return;
   }
   setBusy(true);
