@@ -23,6 +23,12 @@ async function readText(path) {
 }
 const pages=[{path:'/',label:'Home'},{path:'/contact',label:'Contact'},{path:'/projects',label:'Projects'},{path:'/insights',label:'Insights'}];
 try {
+ const secureResponse=await fetch(SITE+'/',{signal:AbortSignal.timeout(90_000)});
+ record('Security header: X-Content-Type-Options',secureResponse.headers.get('x-content-type-options')==='nosniff');
+ record('Security header: Referrer-Policy',Boolean(secureResponse.headers.get('referrer-policy')?.includes('strict-origin-when-cross-origin')));
+ record('Security header: Permissions-Policy',Boolean(secureResponse.headers.get('permissions-policy')?.includes('camera=()')));
+ const dashboardMarkup=await readText('/dashboard');
+ record('Private dashboard excluded from indexing',/<meta[^>]+name=["']robots["'][^>]+content=["'][^"']*noindex/i.test(dashboardMarkup));
  const robots=await readText('/robots.txt');
  const sitemap=await readText('/sitemap.xml');
  record('robots.txt allows public pages',!/Disallow:\s*\/\s*$/mi.test(robots));
