@@ -8,7 +8,7 @@ export async function callApi<T>(path:string,options:RequestInit={},user?:User|n
  if(!response.ok)throw new Error((json as {error?:string}).error||`Request failed (${response.status})`);
  return json as T;
 }
-export type Message={_id:string;sender:'client'|'assistant'|'owner';text:string;deliveredBy:'person'|'rule'|'ai';createdAt:string};
+export type Message={_id:string;sender:'client'|'assistant'|'owner';text:string;deliveredBy:'person'|'rule'|'ai';createdAt:string;openedAt?:string|null};
 export type Conversation={_id:string;participantUid:string;participantEmail:string;participantName:string;status:'open'|'closed';lastMessageAt:string};
 export type Lead={_id:string;name:string;email:string;company:string;service:string;budget:string;message:string;status:'new'|'contacted'|'closed';createdAt:string};
 
