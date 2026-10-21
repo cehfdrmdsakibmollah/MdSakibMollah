@@ -1,6 +1,7 @@
 import admin from 'firebase-admin';
 import type {Request,Response,NextFunction} from 'express';
 import {env,admins} from './config.js';
+import {identityFromClaims,type Identity} from './identity.js';
 
 if (!admin.apps.length) {
   if (env.FIREBASE_SERVICE_ACCOUNT_JSON_B64) {
@@ -27,7 +28,6 @@ if (!admin.apps.length) {
       });
   }
 }
-export type Identity={uid:string;email:string;name:string;admin:boolean};
 declare global {namespace Express {interface Request {identity?:Identity}}}
 type HttpError=Error&{status?:number;code?:string};
 function denied(message:string,status:number,code:string):HttpError{
@@ -45,9 +45,7 @@ export async function getIdentity(idToken:string):Promise<Identity>{
     console.error('[Firebase Admin] Token verification unavailable:',code||String(error));
     throw denied('The sign-in service is temporarily unavailable. Check Firebase Admin credentials and server logs.',503,'AUTH_SERVICE_UNAVAILABLE');
   }
-  if(!token.email||!token.email_verified)throw denied('Verify your email before using private messaging.',403,'EMAIL_NOT_VERIFIED');
-  const email=token.email.toLowerCase();
-  return {uid:token.uid,email,name:typeof token.name==='string'?token.name:email.split('@')[0],admin:admins.has(email)};
+  return identityFromClaims(token,admins);
 }
 export async function requireAuth(req:Request,_res:Response,next:NextFunction){
   try {
