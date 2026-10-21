@@ -21,6 +21,7 @@ app.use(compression());app.use(express.json({limit:'30kb'}));
 app.use('/api/v1',(_req,res,next)=>{res.setHeader('Cache-Control','no-store');next();});
 app.use('/api/v1',rateLimit({windowMs:60*1000,limit:60,standardHeaders:'draft-8',legacyHeaders:false}));
 app.use('/api/v1/contact',rateLimit({windowMs:60*60*1000,limit:5,standardHeaders:'draft-8',legacyHeaders:false}));
+app.use('/api/v1/assistant/faq',rateLimit({windowMs:60*1000,limit:15,standardHeaders:'draft-8',legacyHeaders:false}));
 app.use('/api/v1/conversations',rateLimit({windowMs:60*1000,limit:25,standardHeaders:'draft-8',legacyHeaders:false}));
 const server=http.createServer(app);
 const io=new IoServer(server,{cors:{origin:origins,methods:['GET','POST']},transports:['websocket','polling']});
