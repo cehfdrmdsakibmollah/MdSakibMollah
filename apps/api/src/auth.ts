@@ -5,9 +5,26 @@ import {env,admins} from './config.js';
 if (!admin.apps.length) {
   if (env.FIREBASE_SERVICE_ACCOUNT_JSON_B64) {
     const credentials=JSON.parse(Buffer.from(env.FIREBASE_SERVICE_ACCOUNT_JSON_B64,'base64').toString('utf8'));
+    // Rotation check logs only a yes/no result; never log key IDs, JSON or Base64.
+    const expectedId=process.env.FIREBASE_EXPECTED_KEY_ID;
+    if (expectedId && process.env.RENDER) {
+      console.info('[Firebase Admin] Expected service-account key configured:', {
+        matches:credentials.private_key_id===expectedId
+      });
+    }
     admin.initializeApp({credential:admin.credential.cert(credentials),projectId:env.FIREBASE_PROJECT_ID});
   } else {
     admin.initializeApp({credential:admin.credential.applicationDefault(),projectId:env.FIREBASE_PROJECT_ID});
+  }
+  // Run one read-only credential check at startup without printing user records.
+  // This does not replace a full signed-in Google Login / messaging test.
+  if(process.env.RENDER && process.env.FIREBASE_EXPECTED_KEY_ID){
+    void admin.auth().listUsers(1)
+      .then(()=>console.info('[Firebase Admin] Auth service credential probe: OK'))
+      .catch(error=>{
+        const code=typeof (error as {code?:unknown})?.code==='string'?(error as {code:string}).code:'UNKNOWN';
+        console.error('[Firebase Admin] Auth service credential probe: FAILED', {code});
+      });
   }
 }
 export type Identity={uid:string;email:string;name:string;admin:boolean};
