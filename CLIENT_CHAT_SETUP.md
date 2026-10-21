@@ -57,6 +57,17 @@ Implementation: `apps/web/src/lib/chat-open-chime.ts` called from `apps/web/src/
 - Live public music was removed; a short, low-gain chat-opening chime passed headless Chromium verification. The background-music button is absent.
 - The E2E workflow is **manual-only** after the initial test to avoid generating test leads on ordinary pushes or PRs. It writes one identifiable test record when explicitly run. Delete such records after inspection.
 
+## Owner-only notification diagnostics
+
+The owner dashboard includes **Send test notification to owner Gmail**. It is available only to a verified Firebase account matching `ADMIN_EMAILS`, and only when the backend reports a configured Resend sender. The button calls `POST /api/v1/admin/notifications/test` through the existing same-origin Next.js API proxy.
+
+- The backend **never** accepts an email address from this endpoint: the recipient is the `OWNER_NOTIFICATION_EMAIL` already saved on Render.
+- It allows at most **two requests per hour** per rate-limit client and uses a **12-second** timeout for the provider.
+- `503 EMAIL_NOT_CONFIGURED`: set a valid Resend API key and **verified** sender domain in Render environment variables.
+- `502 EMAIL_PROVIDER_FAILED`: provider rejected the send. Inspect Render logs and the Resend dashboard. Do not report success.
+- `202 providerAccepted:true`: Resend accepted the request. **This does not prove delivery to Gmail.** Check owner Inbox and Spam and Resend delivery status. No recipient secrets/API keys are returned.
+- A browser-side or API test without a Firebase owner token is **not** an end-to-end Google OAuth/login test, so the client → owner → client private-message round trip still requires a second legitimately signed-in client account.
+
 ## Security boundaries
 
 - Never post JSON private keys, Base64 service credentials, MongoDB URIs or Resend API keys to GitHub or ChatGPT.
