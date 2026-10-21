@@ -126,6 +126,10 @@ A small, privacy-limited receipt is available only after the **new client fronte
 
 No customer messages or credentials are changed by unit/CI tests. Production verification requires deploying the new version and using a separate verified client session.
 
+## Long conversations: most recent 200 messages
+
+The authenticated chat message endpoint now selects the **latest** 200 records in descending timestamp + ObjectId order, then returns them oldest-to-newest. Previously it selected the **oldest** 200, which could make later personal owner replies invisible once a conversation passed the cap. The 200-message response cap remains in place to bound API payload size and account-specific database reads. Older history is not yet paginated; it is still safely stored in MongoDB. New unit tests simulate a 215-message conversation and ensure the latest owner-side traffic remains in the response window.
+
 ## Security boundaries
 
 - Never post JSON private keys, Base64 service credentials, MongoDB URIs or Resend API keys to GitHub or ChatGPT.
