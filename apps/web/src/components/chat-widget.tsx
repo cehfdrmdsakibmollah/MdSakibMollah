@@ -8,7 +8,14 @@ import {callApi,type Message,type Conversation} from '@/lib/api';
 import {quickReply} from '@/lib/quick-replies';
 import {playChatOpenChime} from '@/lib/chat-open-chime';
 type LocalMessage={id:string;sender:'client'|'assistant';text:string};
+// Force a fresh widget instance whenever Firebase identity changes.
+// React destroys the old component state immediately on sign-out or account switch,
+// so cached messages from the previous client cannot be shown to the next user.
 export default function ChatWidget(){
+ const {user}=useAuth();
+ return <ChatWidgetSession key={user?.uid??'signed-out'} />;
+}
+function ChatWidgetSession(){
  const {user,setAuthOpen}=useAuth();
  const [open,setOpen]=useState(false);
  const [online,setOnline]=useState<boolean|null>(null);
