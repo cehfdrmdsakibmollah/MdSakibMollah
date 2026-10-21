@@ -68,6 +68,14 @@ The owner dashboard includes **Send test notification to owner Gmail**. It is av
 - `202 providerAccepted:true`: Resend accepted the request. **This does not prove delivery to Gmail.** Check owner Inbox and Spam and Resend delivery status. No recipient secrets/API keys are returned.
 - A browser-side or API test without a Firebase owner token is **not** an end-to-end Google OAuth/login test, so the client → owner → client private-message round trip still requires a second legitimately signed-in client account.
 
+## Transactional email reliability hardening (21 October 2026)
+
+The Contact API, verified client private-message API, and owner reply API now **await Resend provider acceptance or its bounded timeout** before responding, instead of launching a fire-and-forget email task that could be terminated after a serverless response. This does not make a saved inquiry dependent on sending email: MongoDB data is stored first, and a configured provider failure is logged without leaking keys or customer content. A successful API `201` indicates database write success, **not that Gmail received an email**.
+
+For improved privacy, client-message and owner-reply notification emails now contain only a private conversation reference and a link to the portfolio. Full private messages are visible **only after sign-in** to the authorized client chat or owner dashboard. The existing Resend transport escapes HTML, limits provider HTTP wait to 12 seconds and returns provider acceptance only.
+
+No additional credentials are needed in GitHub. Production requires Render's configured `RESEND_API_KEY`, `RESEND_FROM_EMAIL` for an actually verified sender domain, and `OWNER_NOTIFICATION_EMAIL`. The remaining live test is: after new backend deployment, submit an authorized test client message, check owner inbox, and send an owner reply through the dashboard; confirm receipt with a distinct logged-in client. Never claim a live send occurred based on unit tests.
+
 ## Security boundaries
 
 - Never post JSON private keys, Base64 service credentials, MongoDB URIs or Resend API keys to GitHub or ChatGPT.
