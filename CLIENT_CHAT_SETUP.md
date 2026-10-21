@@ -2,7 +2,7 @@
 
 ## 1. Fix Google sign-in on the Vercel production domain
 
-The current screenshot shows **auth/unauthorized-domain**, not a bad Firebase password or Atlas connection.
+**As checked on 21 October 2026**, Firebase Authorized domains already includes `mdsakibmollah.vercel.app`. The original `auth/unauthorized-domain` blocker was addressed; completion of a real Google OAuth popup remains unverified.
 
 1. Open [Firebase Authentication](https://console.firebase.google.com/project/mdsakibmollahportfolio/authentication).
 2. Under **Sign-in method**, verify Google provider is **Enabled**. Choose support email if the console requests one.
@@ -40,11 +40,13 @@ The free Render instance blocks direct SMTP connections on common mail ports. Th
 
 If a custom sender domain is unavailable, continue using the **Dashboard inbox and Contact page** for messages. Do not display false email-delivery claims.
 
-## 4. Gentle optional intro music
+## 4. Very quiet chat-open sound (replaces music)
 
-An owner-uploaded 9-second fade-in/fade-out WebM audio intro is supplied separately in the artifact `MD-Sakib-Mollah-Music-Asset.zip`. It comes from the uploaded `funk power.mpeg` clip. Place **`funk-power-intro.webm`** inside `apps/web/public/audio/` in GitHub, then redeploy Vercel. The component `apps/web/src/components/ambient-music.tsx` enables the player only when the hosted asset exists.
+Background music was removed at the owner's request. The site does **not** mount an AmbientMusic component, display a Music control, or serve `/audio/funk-power-intro.webm`.
 
-Music **does not start on page load**; browsers normally block audible autoplay and visitors should not be surprised. The visitor can press Play, adjust only between 10% and 20%, pause, or leave the tab to pause automatically. No repeat loop.
+Opening the floating assistant with a **user click** triggers a single, very soft Web Audio chime (sine wave, 170ms, peak gain 0.012). No autoplay on page load, no looping background sound, and no sound when closing chat. Unsupported or blocked browser audio silently falls back to normal chat.
+
+Implementation: `apps/web/src/lib/chat-open-chime.ts` called from `apps/web/src/components/chat-widget.tsx`. GitHub Actions `Live production smoke` verifies behavior against the deployed main branch. On PRs, the smoke suite deliberately checks the *currently deployed* version to avoid confusing preview code with production.
 
 ## Security boundaries
 
