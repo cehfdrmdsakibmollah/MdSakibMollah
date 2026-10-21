@@ -10,7 +10,7 @@ test('MongoDB fetch selects newest messages using timestamp and ObjectId tie bre
 test('a long conversation shows its newest 200 messages in chronological order',()=>{
  const all=Array.from({length:215},(_,i)=>({id:i+1}));
  // MongoDB would select a descending page before limit(200).
- const descending=all.toReversed().slice(0,recentChatLimit);
+ const descending=[...all].reverse().slice(0,recentChatLimit);
  const displayed=chronologicalFromNewest(descending);
  assert.equal(displayed.length,200);
  assert.equal(displayed[0].id,16);
