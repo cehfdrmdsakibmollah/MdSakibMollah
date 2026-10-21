@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 
 const SITE = 'https://mdsakibmollah.vercel.app';
 const API = 'https://sakib-portfolio-api-free.onrender.com';
+const EXPECT_CHAT_CHIME = process.env.EXPECT_CHAT_CHIME === '1';
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function request(path, options = {}) {
@@ -34,15 +35,22 @@ async function main() {
   console.log('PASS: live homepage HTTP 200');
 
   const audioUrl = SITE + '/audio/funk-power-intro.webm';
-  response = await request(audioUrl, { method: 'HEAD' });
-  assert.equal(response.status, 200, 'Music HEAD must be 200');
-  assert.match(response.headers.get('content-type') || '', /(audio|webm)/i, 'Music MIME must be audio or WebM');
-  response = await request(audioUrl);
-  assert.equal(response.status, 200, 'Music GET must be 200');
-  const audio = Buffer.from(await response.arrayBuffer());
-  assert.ok(audio.length > 5000, 'Music asset should not be empty');
-  assert.equal(audio.subarray(0, 4).toString('hex'), '1a45dfa3', 'Expected WebM container');
-  console.log(`PASS: live music HEAD/GET, WebM signature, bytes=${audio.length}, type=${response.headers.get('content-type')}`);
+  if (EXPECT_CHAT_CHIME) {
+    // Static assets may be cached briefly while Vercel's new deploy propagates.
+    for (let attempt = 0; attempt < 15; attempt += 1) {
+      response = await request(audioUrl, { method: 'HEAD' });
+      if (response.status === 404) break;
+      await sleep(12_000);
+    }
+    assert.equal(response.status, 404, 'Old background-music file must be removed from live site');
+    console.log('PASS: former background-music asset removed (HTTP 404)');
+  } else {
+    // On pull requests the current production may still have the prior release.
+    response = await request(audioUrl, { method: 'HEAD' });
+    assert.equal(response.status, 200, 'Previous production music asset must be reachable before merge');
+    assert.match(response.headers.get('content-type') || '', /(audio|webm)/i);
+    console.log('PASS: existing public music asset on pre-merge production');
+  }
 
   response = await request(API + '/api/v1/health');
   assert.equal(response.status, 200, 'Render API health must be 200');
@@ -85,23 +93,68 @@ async function main() {
   });
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-    // Decline optional analytics before app hydration so its consent banner does
-    // not overlay the bottom-left audio button in first-visit headless Chrome.
-    await page.addInitScript(() => localStorage.setItem('sakib-analytics-consent', 'no'));
+    // No optional analytics; monitor Web Audio rather than reading private audio.
+    await page.addInitScript(() => {
+      localStorage.setItem('sakib-analytics-consent', 'no');
+      window.__chimeCalls = [];
+      if (window.OscillatorNode) {
+        const previousStart = window.OscillatorNode.prototype.start;
+        const previousStop = window.OscillatorNode.prototype.stop;
+        window.OscillatorNode.prototype.start = function (when) {
+          window.__chimeCalls.push({ action: 'start', at: when ?? 0 });
+          return previousStart.call(this, when);
+        };
+        window.OscillatorNode.prototype.stop = function (when) {
+          window.__chimeCalls.push({ action: 'stop', at: when ?? 0 });
+          return previousStop.call(this, when);
+        };
+      }
+      window.__chimeAmplitudes = [];
+      if (window.GainNode) {
+        const originalCreateGain = window.BaseAudioContext.prototype.createGain;
+        window.BaseAudioContext.prototype.createGain = function () {
+          const node = originalCreateGain.call(this);
+          const originalRamp = node.gain.linearRampToValueAtTime.bind(node.gain);
+          node.gain.linearRampToValueAtTime = function (value, time) {
+            window.__chimeAmplitudes.push(value);
+            return originalRamp(value, time);
+          };
+          return node;
+        };
+      }
+    });
     await page.goto(SITE + '/dashboard', { waitUntil: 'domcontentloaded', timeout: 90_000 });
 
-    // Music starts only after a deliberate user click. A Pause button appears
-    // only after HTMLAudioElement.play() resolves successfully.
-    const music = page.getByRole('button', { name: 'Play optional ambient music' });
-    await music.waitFor({ timeout: 35_000 });
-    await music.click();
-    const pause = page.getByRole('button', { name: 'Pause ambient music' });
-    await pause.waitFor({ timeout: 15_000 });
-    await page.waitForTimeout(700);
-    assert.ok(await pause.count(), 'Music should remain playing after user click');
-    await pause.click();
-    await music.waitFor({ timeout: 5000 });
-    console.log('PASS: Chromium shows Music, starts playback by click, and pauses');
+    if (EXPECT_CHAT_CHIME) {
+      const ambient = page.getByRole('button', { name: 'Play optional ambient music' });
+      assert.equal(await ambient.count(), 0, 'Old Music control must no longer appear');
+      let calls = await page.evaluate(() => window.__chimeCalls);
+      assert.equal(calls.length, 0, 'Sound must not autoplay on page load');
+      const openChat = page.getByRole('button', { name: 'Open portfolio assistant' });
+      await openChat.click();
+      await page.getByRole('dialog', { name: 'Portfolio assistant and client messages' }).waitFor();
+      await page.waitForFunction(() => window.__chimeCalls.some(c => c.action === 'start'), { timeout: 8000 });
+      calls = await page.evaluate(() => window.__chimeCalls);
+      const start = calls.find(c => c.action === 'start');
+      const stop = calls.find(c => c.action === 'stop');
+      assert.ok(start && stop, 'Chat click must schedule a short oscillator');
+      assert.ok(stop.at - start.at <= 0.2, 'Chime must last at most 200ms');
+      const amplitudes = await page.evaluate(() => window.__chimeAmplitudes);
+      assert.ok(amplitudes.length && amplitudes.every(x => x <= 0.02), 'Chime gain must stay very low');
+      await page.getByRole('button', { name: 'Close live chat' }).click();
+      calls = await page.evaluate(() => window.__chimeCalls);
+      assert.equal(calls.filter(c => c.action === 'start').length, 1, 'Closing chat must be silent');
+      console.log('PASS: no autoplay, no Music UI, soft <=200ms popup chime on chat opening only');
+    } else {
+      const music = page.getByRole('button', { name: 'Play optional ambient music' });
+      await music.waitFor({ timeout: 35_000 });
+      await music.click();
+      const pause = page.getByRole('button', { name: 'Pause ambient music' });
+      await pause.waitFor({ timeout: 15_000 });
+      await pause.click();
+      await music.waitFor({ timeout: 5000 });
+      console.log('PASS: previous Music control on pre-merge production');
+    }
 
     const login = page.getByRole('button', { name: 'Client sign-in' });
     await login.waitFor({ timeout: 15_000 });
