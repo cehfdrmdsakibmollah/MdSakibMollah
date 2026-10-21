@@ -75,3 +75,5 @@ jobs:
 # Final checks after pausing the deprecated Vercel Express backend.
 
 # Final non-destructive health checks after verified Firebase Admin key rotation.
+
+# Post-revocation health and privacy boundary confirmation.
