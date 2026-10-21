@@ -5,6 +5,7 @@ import {rateLimit} from 'express-rate-limit';
 import {Lead,Conversation,Message,Feedback} from './models.js';
 import {requireAuth,requireAdmin} from './auth.js';
 import {canReadPrivateConversation,canPostClientMessage} from './identity.js';
+import {openedReplySchema,ownerReplyReceiptFilter} from './owner-receipts.js';
 import {assistantReply,publicFaqReply} from './assistant.js';
 import {sendEmail} from './notifications.js';
 import {env} from './config.js';
@@ -62,20 +63,15 @@ export function createRoutes(io:IoServer){
  // A receipt only means a verified participant had an owner's reply visible
  // inside their open chat. No message text or third-party telemetry is sent.
  api.post('/conversations/:id/owner-replies/opened',async(req,res)=>{
-   const {messageIds}=z.object({
-     messageIds:z.array(z.string().regex(/^[a-f0-9]{24}$/i)).min(1).max(30)
-   }).strict().parse(req.body);
+   const {messageIds}=openedReplySchema.parse(req.body);
    const conversation=await Conversation.findById(objectId(req.params.id));
    if(!conversation)throw asError('Conversation not found',404);
    if(!canPostClientMessage(req.identity!,conversation.participantUid))
      throw asError('Forbidden',403);
-   const uniqueIds=[...new Set(messageIds)];
-   const result=await Message.updateMany({
-     _id:{$in:uniqueIds},
-     conversationId:conversation._id,
-     sender:'owner',
-     openedAt:{$exists:false}
-   },{$set:{openedAt:new Date()}});
+   const result=await Message.updateMany(
+     ownerReplyReceiptFilter(String(conversation._id),messageIds),
+     {$set:{openedAt:new Date()}}
+   );
    if(result.modifiedCount){
      io.to('owners').emit('conversation:update',{id:String(conversation._id)});
    }
