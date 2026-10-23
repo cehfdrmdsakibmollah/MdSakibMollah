@@ -138,6 +138,16 @@ try {
   await browserPage.getByRole('button',{name:'Show all projects'}).count().then(async n=>{if(n)await browserPage.getByRole('button',{name:'Show all projects'}).click()});
   await browserPage.getByRole('button',{name:'Reset filters'}).click();
   record('Project explorer resets to all projects',await browserPage.getByTestId('project-result-count').innerText()==='8 of 8 projects');
+  await browserPage.getByRole('button',{name:'Add Commerce Reimagined to comparison'}).click();
+  await browserPage.getByRole('button',{name:'Add Realtime Tasks to comparison'}).click();
+  await browserPage.waitForFunction(()=>new URL(location.href).searchParams.get('compare')?.includes('firebase-todo'));
+  record('Comparison selection creates a shareable URL',new URL(browserPage.url()).searchParams.get('compare')?.split(',').length===2);
+  await browserPage.getByRole('button',{name:'Compare selected'}).click();
+  const comparison=browserPage.getByRole('region',{name:'Side-by-side project comparison'});
+  record('Compare selected shows real GitHub projects',await comparison.isVisible()&&await comparison.getByRole('columnheader',{name:'Realtime Tasks'}).count()===1);
+  const copiedLink=browserPage.url();
+  await browserPage.goto(copiedLink,{waitUntil:'domcontentloaded',timeout:80_000});
+  record('Shortlist restores from a shared URL',await browserPage.getByRole('button',{name:'Remove Realtime Tasks from comparison'}).count()>=1);
   await browserPage.close();
  }else console.log('WARN: Latest discovery UI tests deferred until Vercel production revision matches this GitHub SHA.');
  const problems=findings.filter(x=>!x.ok);
