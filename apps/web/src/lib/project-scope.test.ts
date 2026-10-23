@@ -32,7 +32,7 @@ test('scope considerations depend on actual client-selected capabilities',()=>{
  assert.ok(assessment.considerations.some(x=>/AI providers/.test(x)));
  assert.ok(assessment.considerations.some(x=>/first release priorities/.test(x)));
  assert.ok(assessment.considerations.some(x=>/Budget and feature priorities/.test(x)));
- assert.ok(!assessment.considerations.some(x=>/guaranteed delivery|fixed price/i));
+ assert.ok(!assessment.considerations.some(x=>/guaranteed delivery|fixed price/i.test(x)));
 });
 
 test('Markdown download content includes supplied information, omits private contact fields, and does not promise prices',()=>{
