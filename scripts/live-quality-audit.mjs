@@ -181,6 +181,16 @@ try {
   await browserPage.getByRole('button',{name:/^Next/}).click();
   const prepared=await browserPage.getByTestId('project-brief-preview').innerText();
   record('Planner produces editable scope and selected features',prepared.includes('reservation site')&&prepared.includes('Booking or scheduling')&&prepared.includes('Mobile Application'));
+  const scopeTopics=await browserPage.getByTestId('scope-topics').innerText();
+  record('Planner scope review reports supplied planning topics',scopeTopics==='2 of 5 topics');
+  record('Planner highlights booking requirements to clarify',
+    await browserPage.getByRole('region',{name:'Project scope review'}).getByText(/cancellations, time zones and notifications/).count()===1);
+  const [briefDownload]=await Promise.all([
+   browserPage.waitForEvent('download',{timeout:20_000}),
+   browserPage.getByRole('button',{name:'Download .md'}).click()
+  ]);
+  record('Planner produces local Markdown project brief download',
+    briefDownload.suggestedFilename()==='project-brief.md'&&unexpectedPlannerSubmissions===0);
   await browserPage.getByRole('button',{name:/Continue to contact form/}).click();
   await browserPage.waitForURL(url=>url.pathname==='/contact',{timeout:20_000});
   await browserPage.getByText('Project brief added.').waitFor({state:'visible',timeout:15_000});
