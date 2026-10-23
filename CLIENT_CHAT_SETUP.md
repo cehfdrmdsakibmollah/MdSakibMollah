@@ -149,6 +149,21 @@ The public `/projects` page can now shortlist and compare up to **three verified
 - Unit tests verify comparison size limits, allowlisted project slugs, malicious/invalid URL parameters, deterministic serialization and share-link round trips. Live Chromium tests on the new production revision check choosing two projects, comparing and reloading a shared link.
 - Existing `Ctrl+K` search, Owner Dashboard and private chat/authentication boundaries remain unchanged.
 
+## Guided Project Brief Studio
+
+Visitors can use the public `/planner` page (also in sitemap, Footer, Contact page and global `Ctrl+K` search) to prepare an inquiry through a **4-step project brief builder**:
+
+1. Describe the project goal and audience (minimum 10 characters for the goal).
+2. Select a service category and any optional feature priorities.
+3. Select a preferred timeline and an indicative budget **preference**; add optional constraints.
+4. Review a live generated brief, optionally copy it, or press **Continue to contact form**.
+
+The tool does **not** quote project prices, promise delivery dates or invoke paid AI. Input lengths and enumerated options are bounded and validated in `apps/web/src/lib/project-brief.ts` with dedicated unit tests. It requires no Google login. No background music, marketing popups or external telemetry have been added.
+
+Contact transfer is **explicit, temporary, and non-sending**: clicking Continue saves a versioned, validated brief in the *current tab's sessionStorage* under `sakib-project-brief-transfer-v1` and opens `/contact`. Contact Form consumes and removes that draft once. It preselects service/budget and inserts the editable message, but leaves name/email blank and never sends an inquiry without a separate deliberate **Send Project Inquiry** click. The brief content can contain a user's own project details, so avoid including secrets or highly sensitive personal information. Copying requires browser clipboard permission.
+
+After Vercel deploys a matching frontend revision, `scripts/live-quality-audit.mjs` verifies the entire UI flow in Chromium including that **zero contact POST requests** were issued. Google OAuth two-account validation and actual Resend/Gmail delivery remain independent account-level tasks.
+
 ## Security boundaries
 
 - Never post JSON private keys, Base64 service credentials, MongoDB URIs or Resend API keys to GitHub or ChatGPT.
