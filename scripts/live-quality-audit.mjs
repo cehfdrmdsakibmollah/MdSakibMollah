@@ -89,9 +89,17 @@ try {
   }
   if(width===375){
    await page.goto(SITE+'/',{waitUntil:'domcontentloaded',timeout:80_000});
+   // Server-rendered buttons appear before React listeners are attached.
+   // Header enables its theme button in a post-hydration effect: wait for that
+   // explicit ready signal instead of clicking a not-yet-interactive menu.
+   await page.waitForFunction(()=>{
+     const theme=document.querySelector('button[aria-label="Toggle light or dark mode"]');
+     return theme instanceof HTMLButtonElement && !theme.disabled;
+   },null,{timeout:15_000});
    const open=page.getByRole('button',{name:'Open navigation'});
    await open.click();
    const mobile=page.getByRole('navigation',{name:'Mobile navigation'});
+   await mobile.waitFor({state:'visible',timeout:15_000});
    record('375px mobile menu opens',await mobile.isVisible());
    await mobile.getByRole('link',{name:'Contact'}).click();
    await page.waitForURL(url=>url.pathname==='/contact',{timeout:15_000});
