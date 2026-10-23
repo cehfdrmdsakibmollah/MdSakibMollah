@@ -109,6 +109,37 @@ try {
   record('Keyboard skip-to-main link is first and focusable',await nav.evaluate(el=>el===document.activeElement));
  }
  await page.close();
+ // UI features are only testable once the same GitHub revision reaches production.
+ // On PRs or stale deployments, don't mistake an older production UI for a code bug.
+ const release=await fetch(SITE+'/api/release',{cache:'no-store'}).then(r=>r.json()).catch(()=>null);
+ const testNewUi=Boolean(process.env.GITHUB_SHA && release?.revision===process.env.GITHUB_SHA);
+ if(testNewUi){
+  const browserPage=await browser.newPage({viewport:{width:390,height:844}});
+  await browserPage.addInitScript(()=>localStorage.setItem('sakib-analytics-consent','no'));
+  await browserPage.goto(SITE+'/',{waitUntil:'domcontentloaded',timeout:80_000});
+  await browserPage.getByRole('button',{name:'Search portfolio (Ctrl+K)'}).click();
+  const searchDialog=browserPage.getByRole('dialog',{name:'Search portfolio'});
+  record('Smart Search modal opens on mobile',await searchDialog.isVisible());
+  const field=searchDialog.getByRole('combobox',{name:/Search portfolio pages/});
+  await field.fill('firebase todo');
+  record('Smart Search finds actual Firebase project',await searchDialog.getByRole('option',{name:/Realtime Tasks/}).count()===1);
+  await browserPage.keyboard.press('Escape');
+  record('Smart Search closes with Escape',await searchDialog.count()===0);
+  await browserPage.keyboard.press('Control+k');
+  record('Smart Search Ctrl+K shortcut works',await searchDialog.isVisible());
+  await field.fill('restaurant');
+  await browserPage.keyboard.press('Enter');
+  await browserPage.waitForURL(url=>url.pathname==='/projects/restaurant-landing',{timeout:20_000});
+  record('Smart Search keyboard Enter navigates to real project',new URL(browserPage.url()).pathname==='/projects/restaurant-landing');
+  await browserPage.goto(SITE+'/projects',{waitUntil:'domcontentloaded',timeout:80_000});
+  const projectSearch=browserPage.getByRole('searchbox',{name:'Search projects'});
+  await projectSearch.fill('shopping');
+  record('Project explorer supports keyword filtering',await browserPage.getByTestId('project-result-count').innerText()==='1 of 8 projects');
+  await browserPage.getByRole('button',{name:'Show all projects'}).count().then(async n=>{if(n)await browserPage.getByRole('button',{name:'Show all projects'}).click()});
+  await browserPage.getByRole('button',{name:'Reset filters'}).click();
+  record('Project explorer resets to all projects',await browserPage.getByTestId('project-result-count').innerText()==='8 of 8 projects');
+  await browserPage.close();
+ }else console.log('WARN: Latest discovery UI tests deferred until Vercel production revision matches this GitHub SHA.');
  const problems=findings.filter(x=>!x.ok);
  console.log(`QUALITY_AUDIT_TOTAL=${findings.length} PASS=${findings.length-problems.length} FAIL=${problems.length}`);
  assert.equal(problems.length,0,'Quality audit found structural defects; inspect FAIL lines');
