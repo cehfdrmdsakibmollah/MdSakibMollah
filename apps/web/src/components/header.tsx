@@ -24,7 +24,7 @@ import { useAuth } from "./providers";
 const links = [
   ["Home", "/"],
   ["Work", "/projects"],
-  ["Services", "/#services"],
+  ["Services", "/services"],
   ["About", "/#about"],
   ["Insights", "/insights"],
   ["Contact", "/contact"],

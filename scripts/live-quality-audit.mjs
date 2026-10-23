@@ -186,6 +186,61 @@ try {
   await browserPage.getByText('Project brief added.').waitFor({state:'visible',timeout:15_000});
   const transferred=await browserPage.getByRole('textbox',{name:/Tell me about your project/}).inputValue();
   record('One-time planner transfer prefills Contact without submitting',transferred.includes('reservation site')&&unexpectedPlannerSubmissions===0);
+  // SEO coverage: every public canonical page must be crawlable, named and
+  // represented in the sitemap, with truthful server-rendered JSON-LD.
+  const seoPaths=[
+   '/','/services','/projects','/insights','/planner','/contact','/privacy',
+   '/services/full-stack-web-development','/services/mobile-app-development',
+   '/services/ai-integration-automation',
+   '/projects/react-ecommerce-firebase','/projects/firebase-todo','/projects/restaurant-landing',
+   '/projects/weather-dashboard','/projects/firebase-google-auth','/projects/commerce-ui',
+   '/projects/creative-navigation','/projects/interior-experience',
+   '/insights/nextjs-seo-performance-checklist',
+   '/insights/firebase-authentication-best-practices',
+   '/insights/designing-better-client-portfolios'
+  ];
+  const rawSitemap=await readText('/sitemap.xml');
+  const sitemapUrls=[...rawSitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m=>m[1].replaceAll('&amp;','&'));
+  record('SEO sitemap has unique canonical public URLs',new Set(sitemapUrls).size===sitemapUrls.length);
+  record('SEO sitemap lists all 21 intended indexable pages',seoPaths.length===21&&seoPaths.every(path=>sitemapUrls.includes(SITE+(path==='/'?'':path))));
+  const ogImage=await fetch(SITE+'/og-image.jpg');
+  record('SEO social preview image is crawlable',ogImage.status===200&&Boolean(ogImage.headers.get('content-type')?.includes('image/')));
+
+  const crawledTitles=new Set();
+  for(const path of seoPaths){
+   const response=await browserPage.goto(SITE+path,{waitUntil:'domcontentloaded',timeout:80_000});
+   assert.equal(response?.status(),200,'SEO public route must return 200: '+path);
+   const seo=await browserPage.evaluate(()=>{
+    const scripts=Array.from(document.querySelectorAll('script[type="application/ld+json"]'));
+    const schemas=scripts.map(s=>{try{return JSON.parse(s.textContent||'')}catch{return null}});
+    return {
+     title:document.title,
+     canonical:document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
+     description:document.querySelector('meta[name="description"]')?.getAttribute('content'),
+     ogTitle:document.querySelector('meta[property="og:title"]')?.getAttribute('content'),
+     ogUrl:document.querySelector('meta[property="og:url"]')?.getAttribute('content'),
+     robots:document.querySelector('meta[name="robots"]')?.getAttribute('content')||'',
+     h1:document.querySelectorAll('h1').length,
+     schemas,
+     breadcrumb:document.querySelector('nav[aria-label="Breadcrumb"]')!==null
+    };
+   });
+   const wanted=SITE+(path==='/'?'':path);
+   const key=path==='/'?'Home':path;
+   record('SEO '+key+': canonical and unique title',
+     seo.canonical===wanted&&!!seo.title&&!crawledTitles.has(seo.title));
+   crawledTitles.add(seo.title);
+   record('SEO '+key+': indexable and descriptive metadata',
+     seo.h1===1&&!!seo.description&&seo.description.length>=55&&
+     !!seo.ogTitle&&!!seo.ogUrl&&!seo.robots.includes('noindex'));
+   record('SEO '+key+': JSON-LD identity, hierarchy and content',
+     seo.schemas.every(Boolean)
+     &&seo.schemas.some(s=>s['@type']==='Person')
+     &&seo.schemas.some(s=>s['@type']==='WebSite')
+     &&(path.split('/').filter(Boolean).length<2||
+       seo.breadcrumb&&seo.schemas.some(s=>s['@type']==='BreadcrumbList')
+       &&seo.schemas.some(s=>['SoftwareSourceCode','BlogPosting','Service'].includes(s['@type']))));
+  }
   await browserPage.close();
  }else console.log('WARN: Latest discovery UI tests deferred until Vercel production revision matches this GitHub SHA.');
  const problems=findings.filter(x=>!x.ok);
