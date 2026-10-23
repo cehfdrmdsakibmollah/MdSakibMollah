@@ -20,13 +20,13 @@ const pages:DiscoveryItem[]=[
 
 export const discoveryItems:DiscoveryItem[]=[
  ...pages,
- ...projects.map(p=>({id:`project-${p.slug}`,type:'Project' as const,title:p.title,description:p.description,href:`/projects/${p.slug}`,keywords:[p.category,...p.stack]})),
+ ...projects.map(p=>({id:`project-${p.slug}`,type:'Project' as const,title:p.title,description:p.description,href:`/projects/${p.slug}`,keywords:[p.slug,p.category,...p.stack]})),
  ...services.map(s=>({id:`service-${s.slug}`,type:'Service' as const,title:s.title,description:s.short,href:`/services/${s.slug}`,keywords:s.tags})),
  ...articles.map(a=>({id:`article-${a.slug}`,type:'Article' as const,title:a.title,description:a.summary,href:`/insights/${a.slug}`,keywords:['insights','article','blog']}))
 ];
 
 export function normalizeSearch(value:string):string {
- return value.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').trim().toLocaleLowerCase('en-US').replace(/\s+/g,' ');
+ return value.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').trim().toLocaleLowerCase('en-US').replace(/[-_]+/g,' ').replace(/\s+/g,' ');
 }
 
 export function searchDiscovery(query:string,limit=9):DiscoveryItem[] {
