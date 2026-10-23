@@ -22,6 +22,8 @@ jobs:
             exit 1
           fi
           node --input-type=module -e "import('helmet').then(m=>{if(typeof m.default !== 'function' || typeof m.default() !== 'function') process.exit(1)})"
+      - name: Check Google Search Console static ownership file
+        run: node scripts/check-google-ownership.mjs
       - name: Type check apps
         run: npm run typecheck
       - name: Assistant behavior tests
