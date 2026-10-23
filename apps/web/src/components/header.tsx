@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   LogIn,
   LogOut,
+  Search,
 } from "lucide-react";
 
 import { useTheme } from "next-themes";
@@ -95,6 +96,16 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
+
+          <button type="button"
+            onClick={()=>window.dispatchEvent(new Event('portfolio:open-search'))}
+            aria-label="Search portfolio (Ctrl+K)"
+            title="Search projects and pages (Ctrl+K)"
+            className="surface h-10 rounded-xl px-3 flex items-center gap-2 hover:text-blue-500 transition-colors">
+            <Search size={18}/>
+            <span className="hidden xl:inline text-xs muted">Search</span>
+            <kbd className="hidden xl:inline text-[10px] opacity-60 border rounded px-1.5 py-0.5">⌘ K</kbd>
+          </button>
 
           {/* Hydration-safe theme toggle */}
           <button
