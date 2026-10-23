@@ -8,8 +8,8 @@ export const metadata:Metadata={
  title:'Web Development, Mobile Apps & AI Integration Services',
  description:'Explore web development with React and Next.js, cross-platform mobile applications and practical AI automation services by MD Sakib Mollah.',
  alternates:{canonical:'/services'},
- openGraph:{type:'website',url:'/services',title:'Web, Mobile & AI Development Services | MD Sakib Mollah',description:'Review web, mobile and AI development capabilities, technology and real public projects.'},
- twitter:{card:'summary_large_image',title:'Software Development Services | MD Sakib Mollah',description:'Explore web, mobile and AI integration capabilities.'}
+ openGraph:{images:[{url:'/og-image.jpg',width:1200,height:630,alt:'MD Sakib Mollah developer portfolio'}],type:'website',url:'/services',title:'Web, Mobile & AI Development Services | MD Sakib Mollah',description:'Review web, mobile and AI development capabilities, technology and real public projects.'},
+ twitter:{images:['/og-image.jpg'],card:'summary_large_image',title:'Software Development Services | MD Sakib Mollah',description:'Explore web, mobile and AI integration capabilities.'}
 };
 const icons=[Code2,Smartphone,Sparkles];
 export default function Services(){

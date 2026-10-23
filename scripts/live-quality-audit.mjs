@@ -218,6 +218,7 @@ try {
      canonical:document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
      description:document.querySelector('meta[name="description"]')?.getAttribute('content'),
      ogTitle:document.querySelector('meta[property="og:title"]')?.getAttribute('content'),
+     ogImage:document.querySelector('meta[property="og:image"]')?.getAttribute('content'),
      ogUrl:document.querySelector('meta[property="og:url"]')?.getAttribute('content'),
      robots:document.querySelector('meta[name="robots"]')?.getAttribute('content')||'',
      h1:document.querySelectorAll('h1').length,
@@ -232,7 +233,7 @@ try {
    crawledTitles.add(seo.title);
    record('SEO '+key+': indexable and descriptive metadata',
      seo.h1===1&&!!seo.description&&seo.description.length>=55&&
-     !!seo.ogTitle&&!!seo.ogUrl&&!seo.robots.includes('noindex'));
+     !!seo.ogTitle&&!!seo.ogUrl&&!!seo.ogImage&&seo.ogImage.endsWith('/og-image.jpg')&&!seo.robots.includes('noindex'));
    record('SEO '+key+': JSON-LD identity, hierarchy and content',
      seo.schemas.every(Boolean)
      &&seo.schemas.some(s=>s['@type']==='Person')
