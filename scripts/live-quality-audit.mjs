@@ -199,6 +199,11 @@ try {
    '/insights/firebase-authentication-best-practices',
    '/insights/designing-better-client-portfolios'
   ];
+  const verificationResponse=await fetch(SITE+'/google25491feec6ee656b.html',{cache:'no-store',signal:AbortSignal.timeout(40_000)});
+  const verificationText=verificationResponse.status===200?await verificationResponse.text():'';
+  record('Google Search Console HTML-file verification is live',
+   verificationResponse.status===200 &&
+   verificationText.trim()==='google-site-verification: google25491feec6ee656b.html');
   const rawSitemap=await readText('/sitemap.xml');
   const sitemapUrls=[...rawSitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m=>m[1].replaceAll('&amp;','&'));
   record('SEO sitemap has unique canonical public URLs',new Set(sitemapUrls).size===sitemapUrls.length);
