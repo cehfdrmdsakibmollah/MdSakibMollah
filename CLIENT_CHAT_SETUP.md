@@ -164,6 +164,18 @@ Contact transfer is **explicit, temporary, and non-sending**: clicking Continue 
 
 After Vercel deploys a matching frontend revision, `scripts/live-quality-audit.mjs` verifies the entire UI flow in Chromium including that **zero contact POST requests** were issued. Google OAuth two-account validation and actual Resend/Gmail delivery remain independent account-level tasks.
 
+## Advanced Client Project Studio — scope review and Markdown export
+
+The `/planner` tool also offers a transparent **Scope Review** while drafting:
+- Counts how many of five briefing topics are supplied: a clear goal, intended audience, requested capabilities, timeline preference and indicative budget range.
+- Shows which topics still need clarification; this is **not** a feasibility, readiness percentage, cost estimate or completed-project guarantee.
+- Displays tailored discussion prompts only when selected features warrant them (payment security/refunds, authentication access controls, scheduling rules, AI data use, API dependencies or a large feature list). All prompts are static and factual; no AI provider or hidden network request is called.
+- On the Review step, visitors may click **Download .md** to export their own brief as a readable Markdown file in the browser. The export uses normalized, length-bounded content and escapes HTML in user inputs; it never posts content to the Portfolio backend, Gmail or a cloud provider.
+- The existing **Copy brief** and explicit **Continue to contact form** workflows remain unchanged. Only a separate intentional contact form submission sends an inquiry.
+- Unit tests cover zero/full coverage, special-feature considerations and safe Markdown export. The live quality workflow tests scope analysis and local download while blocking client contact POSTs.
+
+Avoid putting passwords, financial account details or other secrets into a project brief; client-selected details can become a locally downloaded file that the client controls.
+
 ## Security boundaries
 
 - Never post JSON private keys, Base64 service credentials, MongoDB URIs or Resend API keys to GitHub or ChatGPT.
