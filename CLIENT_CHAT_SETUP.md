@@ -139,6 +139,16 @@ The authenticated chat message endpoint now selects the **latest** 200 records i
 
 These features do not replace real Google OAuth verification or Resend/Gmail end-to-end delivery, both of which require access to their respective authenticated accounts. Do not mark email notifications as delivered solely from a build or provider acceptance.
 
+## Shareable Project Explorer and shortlist
+
+The public `/projects` page can now shortlist and compare up to **three verified repository-backed projects** side-by-side. Its comparison table shows only facts already present in `apps/web/src/lib/site.ts`: category, technology stack, links to the real public GitHub repositories and project details. No fake demos, prices, client claims or new project entries are created.
+
+- Visitors use the independent **Compare** action on a project card; the card itself remains a regular project link. They may remove projects from the shortlist, reset it or open the comparison. Keyboard and mobile controls have descriptive labels.
+- Search term, category, technology, featured-only option, sort order and shortlisted project slugs update the URL query parameters. **Copy filtered link** or **Share shortlist** creates a reproducible link. Only bounded, supported filter values and public project slugs are accepted. Unrelated URL parameters are preserved.
+- The shortlist is also stored in that visitor's browser localStorage for convenience. Nothing is written to MongoDB or associated with their Google login; it works without cookies or an account. No private client messages are included in a shared link.
+- Unit tests verify comparison size limits, allowlisted project slugs, malicious/invalid URL parameters, deterministic serialization and share-link round trips. Live Chromium tests on the new production revision check choosing two projects, comparing and reloading a shared link.
+- Existing `Ctrl+K` search, Owner Dashboard and private chat/authentication boundaries remain unchanged.
+
 ## Security boundaries
 
 - Never post JSON private keys, Base64 service credentials, MongoDB URIs or Resend API keys to GitHub or ChatGPT.
