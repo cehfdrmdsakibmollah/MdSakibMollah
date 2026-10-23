@@ -147,7 +147,9 @@ try {
   record('Compare selected shows real GitHub projects',await comparison.isVisible()&&await comparison.getByRole('columnheader',{name:'Realtime Tasks'}).count()===1);
   const copiedLink=browserPage.url();
   await browserPage.goto(copiedLink,{waitUntil:'domcontentloaded',timeout:80_000});
-  record('Shortlist restores from a shared URL',await browserPage.getByRole('button',{name:'Remove Realtime Tasks from comparison'}).count()>=1);
+  const rehydratedShortlist=browserPage.getByRole('button',{name:'Remove Realtime Tasks from comparison'});
+  await rehydratedShortlist.waitFor({state:'visible',timeout:15_000});
+  record('Shortlist restores from a shared URL',await rehydratedShortlist.isVisible());
   await browserPage.close();
  }else console.log('WARN: Latest discovery UI tests deferred until Vercel production revision matches this GitHub SHA.');
  const problems=findings.filter(x=>!x.ok);
