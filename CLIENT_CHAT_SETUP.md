@@ -130,6 +130,15 @@ No customer messages or credentials are changed by unit/CI tests. Production ver
 
 The authenticated chat message endpoint now selects the **latest** 200 records in descending timestamp + ObjectId order, then returns them oldest-to-newest. Previously it selected the **oldest** 200, which could make later personal owner replies invisible once a conversation passed the cap. The 200-message response cap remains in place to bound API payload size and account-specific database reads. Older history is not yet paginated; it is still safely stored in MongoDB. New unit tests simulate a 215-message conversation and ensure the latest owner-side traffic remains in the response window.
 
+## Advanced portfolio discovery and owner workflow
+
+- **Global Smart Search / Command Palette**: Use the header Search button, `Ctrl+K` / `Cmd+K`, or `/` when not editing a form to search real pages, repository-backed projects, services and published insights. Keyboard arrows select a result, Enter opens it and Escape closes the modal. Search is performed **locally**, with no network request, visitor query tracking or third-party AI usage.
+- **Advanced Projects Explorer**: The public `/projects` route supports keyword search (title, description or technology), category chips, technology dropdown, featured-only checkbox, A–Z / Z–A sorting, result counts and a reset action. Filters do not invent work or alter the actual GitHub links. The home page's compact featured projects grid remains intact.
+- **Owner Dashboard productivity**: Logged-in owner inbox has name/email conversation search and three editable quick reply drafts (Acknowledgement, Project brief and Next steps). Selecting a draft only populates the reply field; **nothing is sent without clicking Send**. Switching the selected conversation immediately clears the prior conversation's messages and unsent draft.
+- **Regression tests**: Search ranking, input normalization, case-insensitive matching, filter intersections, stable sorting, category/technology facets and no synthetic project links are verified by `npm test`.
+
+These features do not replace real Google OAuth verification or Resend/Gmail end-to-end delivery, both of which require access to their respective authenticated accounts. Do not mark email notifications as delivered solely from a build or provider acceptance.
+
 ## Security boundaries
 
 - Never post JSON private keys, Base64 service credentials, MongoDB URIs or Resend API keys to GitHub or ChatGPT.
