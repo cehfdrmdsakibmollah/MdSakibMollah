@@ -13,6 +13,7 @@ const pages:DiscoveryItem[]=[
  {id:'page-home',type:'Page',title:'Home',description:'Meet MD Sakib Mollah and explore the portfolio',href:'/',keywords:['developer','about','portfolio']},
  {id:'page-work',type:'Page',title:'All projects',description:'Browse real GitHub repositories and case studies',href:'/projects',keywords:['work','github','code']},
  {id:'page-contact',type:'Page',title:'Contact & project inquiry',description:'Discuss a project or ask a question',href:'/contact',keywords:['hire','email','whatsapp','inquiry']},
+ {id:'page-planner',type:'Page',title:'Project Brief Builder',description:'Prepare a project scope, feature list, timeline and budget before contacting Sakib',href:'/planner',keywords:['planning','brief','estimate','project scope','hire','budget','timeline']},
  {id:'page-insights',type:'Page',title:'Developer insights',description:'Technical writing and learning notes',href:'/insights',keywords:['articles','blog','writing']},
  {id:'page-dashboard',type:'Page',title:'Client dashboard',description:'Sign in to read private messages and replies',href:'/dashboard',keywords:['messages','login','account','inbox']},
  {id:'page-privacy',type:'Page',title:'Privacy & data use',description:'See how your information is handled',href:'/privacy',keywords:['data','security','policy']},
