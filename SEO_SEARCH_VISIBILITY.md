@@ -15,6 +15,24 @@ Google Search is not a paid listing, and there is **no guarantee of indexing, a 
 - Root /sitemap.xml and /robots.txt, including /services but omitting private Dashboard and API URLs. Links to actual public GitHub repositories and public profile pages remain.
 - GitHub quality automation now checks 21 indexable canonical pages after the matching Vercel revision is live, including sitemap integrity, metadata uniqueness, crawlability, schema parsing and OG image accessibility. Automated passing checks verify technical structure—not ranking, Google indexing, real-user Core Web Vitals, or search traffic.
 
+## Owner-supplied HTML verification file — prepared for next deploy
+
+The original owner-provided file `google25491feec6ee656b.html` has been committed **unchanged** to `apps/web/public/google25491feec6ee656b.html`. Next.js serves static assets in `public/` from the website root, so the required Google Search Console URL will be:
+
+`https://mdsakibmollah.vercel.app/google25491feec6ee656b.html`
+
+The expected plain-text response must be **exactly** `google-site-verification: google25491feec6ee656b.html`. This is intentionally public and contains **no API key**. `scripts/check-google-ownership.mjs` now fails GitHub CI if the file differs from the supplied bytes. The browser quality audit checks the live URL after the Vercel deployment revision matches GitHub `main`.
+
+**Tomorrow, after Vercel free-tier deployment quota resets:**
+
+1. Deploy **latest GitHub main**, not an old deployment's old commit. Do not upgrade billing to get around the quota.
+2. Open the direct verification URL above. It must return the exact expected text and HTTP 200, not a 404 or the portfolio homepage.
+3. In the already-created Search Console URL-prefix property `https://mdsakibmollah.vercel.app/`, expand **HTML file**, then click **VERIFY**. This method uses the uploaded file, so the optional previously saved `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` HTML-tag setting is not necessary for the HTML-file method; leaving it in place does not change the steps.
+4. After **Ownership verified**, submit `sitemap.xml` in Search Console → Sitemaps.
+5. Use URL Inspection to request indexing of the homepage and important pages. Actual indexing and rank cannot be assumed or guaranteed; track these in Search Console.
+
+Do not click **Remove Property**, delete the verification file after verification, copy verification codes into analytics accounts, or expose passwords. The owner has to perform the Search Console verification action in their authenticated property.
+
 ## Account-level Google Search Console setup (requires owner)
 
 1. Sign in to [Google Search Console](https://search.google.com/search-console) with the **site owner's Google account**.
