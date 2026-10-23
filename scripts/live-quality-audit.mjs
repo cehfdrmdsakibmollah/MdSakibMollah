@@ -155,7 +155,8 @@ try {
   record('Compare selected shows real GitHub projects',await comparison.isVisible()&&await comparison.getByRole('columnheader',{name:'Realtime Tasks'}).count()===1);
   const copiedLink=browserPage.url();
   await browserPage.goto(copiedLink,{waitUntil:'domcontentloaded',timeout:80_000});
-  const rehydratedShortlist=browserPage.getByRole('button',{name:'Remove Realtime Tasks from comparison'});
+  const rehydratedShortlist=browserPage.getByRole('region',{name:'Project shortlist and comparison'})
+   .getByRole('button',{name:'Remove Realtime Tasks from comparison'});
   await rehydratedShortlist.waitFor({state:'visible',timeout:15_000});
   record('Shortlist restores from a shared URL',await rehydratedShortlist.isVisible());
   await browserPage.close();
