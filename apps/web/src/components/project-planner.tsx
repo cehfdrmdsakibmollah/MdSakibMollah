@@ -4,13 +4,14 @@ import {useMemo,useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {
  ArrowRight,ArrowLeft,CheckCircle2,ClipboardCopy,ClipboardList,
- Sparkles,ShieldCheck,ExternalLink,RotateCcw
+ Sparkles,ShieldCheck,ExternalLink,RotateCcw,Download,ListChecks
 } from 'lucide-react';
 import {
  PROJECT_BRIEF_KEY,emptyBrief,projectServices,projectBudgets,timelines,
  featureOptions,normalizeBrief,isBriefReady,buildProjectBriefText,toBriefTransfer,
  type ProjectBrief
 } from '@/lib/project-brief';
+import {assessProjectScope,exportProjectBriefMarkdown} from '@/lib/project-scope';
 
 const stages=[
  {name:'Your idea',hint:'Goal and audience'},
@@ -27,6 +28,7 @@ export default function ProjectPlanner(){
  const [status,setStatus]=useState('');
  const [error,setError]=useState('');
  const text=useMemo(()=>buildProjectBriefText(brief),[brief]);
+ const assessment=useMemo(()=>assessProjectScope(brief),[brief]);
  const change=(part:Partial<ProjectBrief>)=>{setBrief(prev=>normalizeBrief({...prev,...part}));setError('');setStatus('')};
  const toggle=(name:string)=>change({features:brief.features.includes(name)?
   brief.features.filter(f=>f!==name):[...brief.features,name]});
@@ -43,6 +45,16 @@ export default function ProjectPlanner(){
   }catch{
    setError('Clipboard access is unavailable. Select and copy the preview below instead.');
   }
+ };
+ const downloadBrief=()=>{
+  if(!isBriefReady(brief)){setStep(0);setError('Describe the project goal before downloading a brief.');return}
+  const file=new Blob([exportProjectBriefMarkdown(brief)],{type:'text/markdown;charset=utf-8'});
+  const url=URL.createObjectURL(file);
+  const link=document.createElement('a');
+  link.href=url;link.download='project-brief.md';link.style.display='none';
+  document.body.appendChild(link);
+  try{link.click();setStatus('Markdown project brief prepared for download.');setError('')}
+  finally{link.remove();window.setTimeout(()=>URL.revokeObjectURL(url),1000)}
  };
  const continueToContact=()=>{
   if(!isBriefReady(brief)){setError('Add a clear project goal before continuing.');setStep(0);return}
@@ -115,7 +127,8 @@ export default function ProjectPlanner(){
        <ShieldCheck className="text-blue-500 shrink-0" size={21}/>
        <p>The next action only prepares the Contact Form. You will enter your name and email there, and decide whether to press Send.</p>
       </div>
-      <button type="button" onClick={()=>void copy()} className="surface rounded-xl inline-flex items-center gap-2 px-5 py-3 font-semibold text-sm"><ClipboardCopy size={18}/> Copy brief</button>
+      <div className="flex flex-wrap gap-3"><button type="button" onClick={()=>void copy()} className="surface rounded-xl inline-flex items-center gap-2 px-5 py-3 font-semibold text-sm"><ClipboardCopy size={18}/> Copy brief</button>
+      <button type="button" onClick={downloadBrief} className="surface rounded-xl inline-flex items-center gap-2 px-5 py-3 font-semibold text-sm"><Download size={18}/> Download .md</button></div>
       <button type="button" onClick={continueToContact} className="flex items-center justify-center gap-2 bg-blue-600 text-white rounded-xl px-6 py-4 font-semibold w-full hover:bg-blue-500">Continue to contact form <ArrowRight size={19}/></button>
      </div>}
      {error&&<p role="alert" className="text-red-400 text-sm mt-5">{error}</p>}
@@ -128,7 +141,17 @@ export default function ProjectPlanner(){
     </div>
     <aside aria-label="Live project brief preview" className="surface rounded-[28px] p-5 sm:p-7 lg:sticky lg:top-28">
      <div className="flex items-center justify-between gap-2"><span className="font-display font-bold text-xl inline-flex gap-2 items-center"><ClipboardList className="text-blue-500" size={22}/> Live brief preview</span>{isBriefReady(brief)&&<CheckCircle2 className="text-emerald-500 shrink-0" size={21}/>}</div>
-     <p className="muted text-xs leading-5 mt-3">Updates as you complete the steps. The preview stays on this device unless you choose to copy or transfer it.</p>
+     <p className="muted text-xs leading-5 mt-3">Updates as you complete the steps. The preview stays on this device unless you choose to copy, download or transfer it.</p>
+     <section aria-label="Project scope review" className="rounded-2xl border p-4 mt-5" style={{borderColor:'var(--border)'}}>
+      <div className="flex gap-2 items-center justify-between">
+       <h3 className="font-semibold text-sm inline-flex items-center gap-2"><ListChecks size={17} className="text-blue-500"/> Scope review</h3>
+       <span className="text-sm font-semibold text-blue-500" data-testid="scope-topics">{assessment.covered} of {assessment.total} topics</span>
+      </div>
+      <p className="muted text-xs leading-5 mt-2">A checklist of information supplied, not a project quality or price score.</p>
+      {assessment.gaps.length>0&&<><h4 className="font-semibold text-xs mt-4">Still useful to clarify</h4><ul className="text-xs muted list-disc pl-5 space-y-1 mt-2">{assessment.gaps.map(gap=><li key={gap}>{gap}</li>)}</ul></>}
+      {assessment.considerations.length>0&&<><h4 className="font-semibold text-xs mt-4">Before development</h4><ul className="text-xs muted list-disc pl-5 space-y-2 mt-2">{assessment.considerations.map(item=><li key={item}>{item}</li>)}</ul></>}
+      {assessment.gaps.length===0&&assessment.considerations.length===0&&<p className="text-xs mt-3 text-emerald-500">All five briefing topics supplied. Scope and feasibility still need a developer review.</p>}
+     </section>
      <pre data-testid="project-brief-preview" className="text-sm leading-7 whitespace-pre-wrap break-words font-sans mt-6 p-4 rounded-xl border bg-blue-500/5" style={{borderColor:'var(--border)'}}>{text}</pre>
      <div className="mt-5 flex gap-2 items-start text-xs muted"><Sparkles size={17} className="text-blue-500 shrink-0"/> Scope and availability are discussed individually. This tool does not generate price guarantees or AI recommendations.</div>
     </aside>
