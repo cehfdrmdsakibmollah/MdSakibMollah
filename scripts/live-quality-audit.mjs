@@ -159,6 +159,33 @@ try {
    .getByRole('button',{name:'Remove Realtime Tasks from comparison'});
   await rehydratedShortlist.waitFor({state:'visible',timeout:15_000});
   record('Shortlist restores from a shared URL',await rehydratedShortlist.isVisible());
+
+  // Public planner should work without Google login, backend writes or paid APIs.
+  let unexpectedPlannerSubmissions=0;
+  await browserPage.route('**/api/backend/contact',route=>{
+   unexpectedPlannerSubmissions++;return route.abort('blockedbyclient');
+  });
+  await browserPage.goto(SITE+'/planner',{waitUntil:'domcontentloaded',timeout:80_000});
+  await browserPage.waitForFunction(()=>{
+   const theme=document.querySelector('button[aria-label="Toggle light or dark mode"]');
+   return theme instanceof HTMLButtonElement && !theme.disabled;
+  },null,{timeout:15_000});
+  record('Guided project planning page renders',await browserPage.getByRole('heading',{name:/Turn your idea into a/}).isVisible());
+  await browserPage.getByRole('textbox',{name:/What problem should this project solve/})
+    .fill('I need a reservation site where local customers can book appointments online.');
+  await browserPage.getByRole('button',{name:/^Next/}).click();
+  await browserPage.getByRole('radio',{name:'Mobile Application'}).check();
+  await browserPage.getByRole('checkbox',{name:'Booking or scheduling'}).check();
+  await browserPage.getByRole('button',{name:/^Next/}).click();
+  await browserPage.getByRole('combobox',{name:'Your approximate budget range'}).selectOption({label:'Not sure yet'});
+  await browserPage.getByRole('button',{name:/^Next/}).click();
+  const prepared=await browserPage.getByTestId('project-brief-preview').innerText();
+  record('Planner produces editable scope and selected features',prepared.includes('reservation site')&&prepared.includes('Booking or scheduling')&&prepared.includes('Mobile Application'));
+  await browserPage.getByRole('button',{name:/Continue to contact form/}).click();
+  await browserPage.waitForURL(url=>url.pathname==='/contact',{timeout:20_000});
+  await browserPage.getByText('Project brief added.').waitFor({state:'visible',timeout:15_000});
+  const transferred=await browserPage.getByRole('textbox',{name:/Tell me about your project/}).inputValue();
+  record('One-time planner transfer prefills Contact without submitting',transferred.includes('reservation site')&&unexpectedPlannerSubmissions===0);
   await browserPage.close();
  }else console.log('WARN: Latest discovery UI tests deferred until Vercel production revision matches this GitHub SHA.');
  const problems=findings.filter(x=>!x.ok);
