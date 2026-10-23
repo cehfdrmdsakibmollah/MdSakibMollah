@@ -89,9 +89,17 @@ try {
   }
   if(width===375){
    await page.goto(SITE+'/',{waitUntil:'domcontentloaded',timeout:80_000});
+   // Server-rendered buttons appear before React listeners are attached.
+   // Header enables its theme button in a post-hydration effect: wait for that
+   // explicit ready signal instead of clicking a not-yet-interactive menu.
+   await page.waitForFunction(()=>{
+     const theme=document.querySelector('button[aria-label="Toggle light or dark mode"]');
+     return theme instanceof HTMLButtonElement && !theme.disabled;
+   },null,{timeout:15_000});
    const open=page.getByRole('button',{name:'Open navigation'});
    await open.click();
    const mobile=page.getByRole('navigation',{name:'Mobile navigation'});
+   await mobile.waitFor({state:'visible',timeout:15_000});
    record('375px mobile menu opens',await mobile.isVisible());
    await mobile.getByRole('link',{name:'Contact'}).click();
    await page.waitForURL(url=>url.pathname==='/contact',{timeout:15_000});
@@ -147,7 +155,9 @@ try {
   record('Compare selected shows real GitHub projects',await comparison.isVisible()&&await comparison.getByRole('columnheader',{name:'Realtime Tasks'}).count()===1);
   const copiedLink=browserPage.url();
   await browserPage.goto(copiedLink,{waitUntil:'domcontentloaded',timeout:80_000});
-  record('Shortlist restores from a shared URL',await browserPage.getByRole('button',{name:'Remove Realtime Tasks from comparison'}).count()>=1);
+  const rehydratedShortlist=browserPage.getByRole('button',{name:'Remove Realtime Tasks from comparison'});
+  await rehydratedShortlist.waitFor({state:'visible',timeout:15_000});
+  record('Shortlist restores from a shared URL',await rehydratedShortlist.isVisible());
   await browserPage.close();
  }else console.log('WARN: Latest discovery UI tests deferred until Vercel production revision matches this GitHub SHA.');
  const problems=findings.filter(x=>!x.ok);
