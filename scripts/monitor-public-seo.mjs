@@ -7,6 +7,7 @@ import {appendFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 
 export const DEFAULT_SITE='https://mdsakibmollah.vercel.app';
+export const DEFAULT_BACKEND='https://sakib-portfolio-api-free.onrender.com';
 export const VERIFICATION_PATH='/google25491feec6ee656b.html';
 export const VERIFICATION_TEXT='google-site-verification: google25491feec6ee656b.html';
 export const CORE_PATHS=['/','/services','/projects','/insights','/planner','/contact','/privacy'];
@@ -46,11 +47,15 @@ async function download(fetchImpl,url,{attempts=2,timeoutMs=35000}={}){
  throw lastError;
 }
 
-export async function monitorPublicSeo({site=DEFAULT_SITE,expectedSha='',expectedUrlCount=21,fetchImpl=fetch,timeoutMs=35000}={}){
+export async function monitorPublicSeo({site=DEFAULT_SITE,backend=DEFAULT_BACKEND,expectedSha='',expectedUrlCount=21,fetchImpl=fetch,timeoutMs=35000}={}){
  const siteUrl=new URL(site);
  if(siteUrl.protocol!=='https:'||siteUrl.pathname!=='/'||siteUrl.search||siteUrl.hash)
   throw new Error('SITE must be a root HTTPS origin');
  const origin=siteUrl.origin;
+ const backendUrl=new URL(backend);
+ if(backendUrl.protocol!=='https:'||backendUrl.pathname!=='/'||backendUrl.search||backendUrl.hash)
+  throw new Error('Backend must be a root HTTPS origin');
+ const backendOrigin=backendUrl.origin;
  const checks=[];
  const record=(label,ok,detail='')=>checks.push({label,ok:Boolean(ok),detail:String(detail)});
  async function read(path){return await download(fetchImpl,origin+path,{timeoutMs});}
@@ -124,6 +129,28 @@ export async function monitorPublicSeo({site=DEFAULT_SITE,expectedSha='',expecte
     `production=${String(revision||'unavailable').slice(0,12)} main=${expectedSha.slice(0,12)} HTTP=${res.status}`);
   }catch(error){record('Vercel production release SHA reachable',false,error.message||String(error));}
  }else record('Expected GitHub main SHA available',false,'Supply the 40-character EXPECTED_SHA from the scheduled workflow');
+
+ // Render Free instances can need 50+ seconds to wake after inactivity.
+ // Health is a public GET endpoint. No customer data, email or DB writes.
+ try{
+  const response=await download(fetchImpl,backendOrigin+'/api/v1/health',{
+   timeoutMs:Math.max(timeoutMs,110_000)
+  });
+  record('Render backend health HTTP 200',response.status===200,`HTTP ${response.status}`);
+  let health;
+  try{health=JSON.parse(response.body)}catch{health=null}
+  record('Render backend and MongoDB healthy',
+   response.status===200&&health?.status==='ok'&&health?.database==='connected',
+   `service=${health?.service||'unavailable'} status=${health?.status||'unavailable'} database=${health?.database||'unavailable'}`);
+  if(/^[a-f0-9]{40}$/i.test(expectedSha)){
+   const revision=health?.revision;
+   record('Render backend release SHA matches main',
+    response.status===200&&typeof revision==='string'&&revision.toLowerCase()===expectedSha.toLowerCase(),
+    `backend=${typeof revision==='string'?revision.slice(0,12):'unavailable'} main=${expectedSha.slice(0,12)}`);
+  }
+ }catch(error){
+  record('Render backend health reachable',false,error instanceof Error?error.message:String(error));
+ }
 
  return {checks,passed:checks.filter(c=>c.ok).length,failed:checks.filter(c=>!c.ok).length,origin};
 }
