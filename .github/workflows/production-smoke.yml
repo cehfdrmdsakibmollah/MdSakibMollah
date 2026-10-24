@@ -18,6 +18,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Check smoke-test JavaScript syntax before installing Chromium driver
+        run: node --check scripts/live-production-smoke.mjs
       - name: Install browser test driver outside the app
         run: npm install --prefix /tmp/portfolio-smoke --no-save --no-package-lock --no-audit --no-fund playwright-core@1.56.1
       - name: Ensure Chromium is available
