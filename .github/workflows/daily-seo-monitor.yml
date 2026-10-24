@@ -1,0 +1,47 @@
+name: Daily public SEO health
+
+on:
+  schedule:
+    # Approximately 10:15 AM Bangladesh time; GitHub may delay cron runs.
+    - cron: '15 4 * * *'
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/monitor-public-seo.mjs'
+      - 'scripts/monitor-public-seo.test.mjs'
+      - '.github/workflows/daily-seo-monitor.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-seo-monitor-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test monitor with mocked public responses
+        run: node --test scripts/monitor-public-seo.test.mjs
+
+  production-monitor:
+    if: github.event_name != 'pull_request'
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify production SEO without modifying production or Google Search Console
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: node scripts/monitor-public-seo.mjs
