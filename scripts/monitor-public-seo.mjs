@@ -5,12 +5,30 @@
  */
 import {appendFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
+import {spawnSync} from 'node:child_process';
 
 export const DEFAULT_SITE='https://mdsakibmollah.vercel.app';
 export const DEFAULT_BACKEND='https://sakib-portfolio-api-free.onrender.com';
 export const VERIFICATION_PATH='/google25491feec6ee656b.html';
 export const VERIFICATION_TEXT='google-site-verification: google25491feec6ee656b.html';
 export const CORE_PATHS=['/','/services','/projects','/insights','/planner','/contact','/privacy'];
+
+/**
+ * A newer main SHA does not always require a backend redeploy.
+ * Require the live Render commit to be an ancestor of main with no intervening
+ * backend-affecting code/dependency/config changes. This avoids false alerts
+ * when only frontend, SEO or documentation files change.
+ *
+ * GitHub Actions must check out the full Git history (fetch-depth: 0).
+ * Never execute shell commands with user-supplied strings.
+ */
+export function backendSourceCompatible(deployed,main,gitStatus=(args)=>spawnSync('git',args,{stdio:'ignore'}).status){
+ if(!/^[a-f0-9]{40}$/i.test(deployed||'')||!/^[a-f0-9]{40}$/i.test(main||''))return false;
+ if(deployed.toLowerCase()===main.toLowerCase())return true;
+ const dependsOn=['apps/api','package.json','package-lock.json','render.yaml','.node-version','.nvmrc'];
+ return gitStatus(['merge-base','--is-ancestor',deployed,main])===0 &&
+  gitStatus(['diff','--quiet',deployed,main,'--',...dependsOn])===0;
+}
 
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const htmlDecode=s=>s.replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;|&apos;/g,"'");
@@ -47,7 +65,7 @@ async function download(fetchImpl,url,{attempts=2,timeoutMs=35000}={}){
  throw lastError;
 }
 
-export async function monitorPublicSeo({site=DEFAULT_SITE,backend=DEFAULT_BACKEND,expectedSha='',expectedUrlCount=21,fetchImpl=fetch,timeoutMs=35000}={}){
+export async function monitorPublicSeo({site=DEFAULT_SITE,backend=DEFAULT_BACKEND,expectedSha='',expectedUrlCount=21,fetchImpl=fetch,timeoutMs=35000,backendRevisionCompatible=backendSourceCompatible}={}){
  const siteUrl=new URL(site);
  if(siteUrl.protocol!=='https:'||siteUrl.pathname!=='/'||siteUrl.search||siteUrl.hash)
   throw new Error('SITE must be a root HTTPS origin');
@@ -144,9 +162,10 @@ export async function monitorPublicSeo({site=DEFAULT_SITE,backend=DEFAULT_BACKEN
    `service=${health?.service||'unavailable'} status=${health?.status||'unavailable'} database=${health?.database||'unavailable'}`);
   if(/^[a-f0-9]{40}$/i.test(expectedSha)){
    const revision=health?.revision;
-   record('Render backend release SHA matches main',
-    response.status===200&&typeof revision==='string'&&revision.toLowerCase()===expectedSha.toLowerCase(),
-    `backend=${typeof revision==='string'?revision.slice(0,12):'unavailable'} main=${expectedSha.slice(0,12)}`);
+   record('Render backend includes latest API changes',
+    response.status===200&&typeof revision==='string'&&
+     backendRevisionCompatible(revision,expectedSha),
+    `backend=${typeof revision==='string'?revision.slice(0,12):'unavailable'} main=${expectedSha.slice(0,12)}; checks backend-related file history`);
   }
  }catch(error){
   record('Render backend health reachable',false,error instanceof Error?error.message:String(error));
