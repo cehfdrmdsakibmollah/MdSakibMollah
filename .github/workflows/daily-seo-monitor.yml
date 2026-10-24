@@ -38,6 +38,10 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Needed to distinguish an actual Render API code gap from
+          # an unrelated frontend / SEO-only main commit.
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
