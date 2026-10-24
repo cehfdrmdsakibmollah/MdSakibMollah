@@ -9,10 +9,11 @@ import {openedReplySchema,ownerReplyReceiptFilter} from './owner-receipts.js';
 import {recentChatLimit,newestFirstChatSort,chronologicalFromNewest} from './message-window.js';
 import {assistantReply,publicFaqReply} from './assistant.js';
 import {sendEmail} from './notifications.js';
+import {persistContactOnce} from './contact-idempotency.js';
 import {env} from './config.js';
 import type {Server as IoServer} from 'socket.io';
 const clean=z.string().trim();
-const contactSchema=z.object({name:clean.min(2).max(90),email:z.email().max(254),company:clean.max(100).default(''),service:clean.max(100).default(''),budget:clean.max(80).default(''),message:clean.min(10).max(4000),website:z.string().max(200).optional()});
+const contactSchema=z.object({name:clean.min(2).max(90),email:z.email().max(254),company:clean.max(100).default(''),service:clean.max(100).default(''),budget:clean.max(80).default(''),message:clean.min(10).max(4000),website:z.string().max(200).optional(),submissionId:z.string().uuid().optional()});
 const messageSchema=z.object({text:clean.min(1).max(2000)});
 const feedbackSchema=z.object({rating:z.number().int().min(1).max(5),comment:clean.max(600).default('')});
 const objectId=(id:string)=>{if(!mongoose.isValidObjectId(id))throw Object.assign(new Error('Invalid conversation id'),{status:400});return id;};
@@ -28,7 +29,28 @@ export function createRoutes(io:IoServer){
  });
  api.post('/contact',async(req,res)=>{
    const data=contactSchema.parse(req.body); if(data.website){res.status(200).json({ok:true});return;}
-   const {website,...safe}=data; const lead=await Lead.create(safe);
+   const {website,submissionId,...safe}=data;
+   // The submission key comes from an HTTPS client-generated UUID. MongoDB's
+   // unique partial index resolves simultaneous retries without duplicate leads.
+   // The notification path below runs ONLY for the first successful insert.
+   const saved=await persistContactOnce({
+     submissionId,
+     lookupReference:async(id)=>{
+       const found=await Lead.findOne({submissionId:id}).select('_id').lean();
+       // Mongoose's untyped legacy model registry broadens findOne's return
+       // type to a document-or-array union; findOne itself returns one doc.
+       const one=found as {_id:unknown}|null;
+       return one?String(one._id):null;
+     },
+     insertReference:async()=>{
+       const lead=await Lead.create({...safe,...(submissionId?{submissionId}:{})});
+       return String(lead._id);
+     }
+   });
+   if(!saved.created){
+     res.status(200).json({ok:true,reference:saved.reference,deduplicated:true});
+     return;
+   }
    // Wait for provider acceptance (up to the timeout in notifications.ts).
    // The inquiry remains stored even when email delivery is unavailable.
    const [ownerAccepted,clientAccepted]=await Promise.all([
@@ -39,7 +61,7 @@ export function createRoutes(io:IoServer){
    ]);
    // These booleans mean provider ACCEPTED, not received in Gmail.
    console.info('[Notification] Contact attempt:',{ownerProviderAccepted:ownerAccepted,clientProviderAccepted:clientAccepted});
-   res.status(201).json({ok:true,reference:String(lead._id)});
+   res.status(201).json({ok:true,reference:saved.reference,deduplicated:false});
  });
  // Public informational FAQ; never persists or forwards guest messages.
  api.post('/assistant/faq',async(req,res)=>{
