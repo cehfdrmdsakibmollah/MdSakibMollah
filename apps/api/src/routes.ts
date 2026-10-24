@@ -37,7 +37,10 @@ export function createRoutes(io:IoServer){
      submissionId,
      lookupReference:async(id)=>{
        const found=await Lead.findOne({submissionId:id}).select('_id').lean();
-       return found?String(found._id):null;
+       // Mongoose's untyped legacy model registry broadens findOne's return
+       // type to a document-or-array union; findOne itself returns one doc.
+       const one=found as {_id:unknown}|null;
+       return one?String(one._id):null;
      },
      insertReference:async()=>{
        const lead=await Lead.create({...safe,...(submissionId?{submissionId}:{})});
