@@ -90,7 +90,7 @@ async function main() {
     {method:'POST',path:`/conversations/${dummyId}/messages`,body:{text:'TEST_ONLY_NOT_PERSISTED'}},
     {method:'POST',path:`/conversations/${dummyId}/feedback`,body:{rating:5,comment:'TEST_ONLY_NOT_PERSISTED'}},
     {method:'POST',path:`/conversations/${dummyId}/owner-replies/opened`,body:{messageIds:[dummyId]}},
-    {method:'PATCH',path:`/admin/leads/${dummyId}`,body:{status:'closed'},
+    {method:'PATCH',path:`/admin/leads/${dummyId}`,body:{status:'closed'}},
   ];
   for (const item of anonymousEndpoints) {
     const options = item.body ? {
