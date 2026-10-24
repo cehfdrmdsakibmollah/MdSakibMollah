@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {persistContactOnce,isDuplicateSubmissionError} from './contact-idempotency.js';
+import {Lead} from './models.js';
 
 test('new request persists once; repeat with same key gets existing reference',async()=>{
  const store=new Map<string,string>();
@@ -71,4 +72,12 @@ test('a collision without an existing matching reference surfaces the error',asy
   lookupReference:async()=>null,
   insertReference:async()=>{throw conflict}
  }),err=>err===conflict);
+});
+
+test('MongoDB lead schema enforces per-submission uniqueness without affecting legacy leads',()=>{
+ const schemaIndexes=Lead.schema.indexes() as Array<[Record<string,number>,Record<string,unknown>]>;
+ const dedupeIndex=schemaIndexes.find(([fields])=>fields.submissionId===1);
+ assert.ok(dedupeIndex,'MongoDB unique contact submission index must be defined');
+ assert.equal(dedupeIndex[1].unique,true);
+ assert.deepEqual(dedupeIndex[1].partialFilterExpression,{submissionId:{$type:'string'}});
 });
