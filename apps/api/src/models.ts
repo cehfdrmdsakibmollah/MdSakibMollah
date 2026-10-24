@@ -10,10 +10,15 @@ const leadSchema=new Schema({
   name:{type:String,required:true,trim:true,maxlength:90},email:{type:String,required:true,lowercase:true,trim:true,maxlength:254},
   company:{type:String,trim:true,maxlength:100,default:''},service:{type:String,trim:true,maxlength:100,default:''},
   budget:{type:String,trim:true,maxlength:80,default:''},message:{type:String,required:true,maxlength:4000},
+  // Client-generated UUID. Sparse/partial uniqueness guarantees that legacy
+  // leads without a submission ID still work without sharing a null index key.
+  submissionId:{type:String,lowercase:true,trim:true,maxlength:36},
   status:{type:String,enum:['new','contacted','closed'],default:'new',index:true},
   source:{type:String,default:'website'}
 },timestamps);
 leadSchema.index({createdAt:-1}); leadSchema.index({email:1,createdAt:-1});
+// Atomic duplicate protection even when two browser retries arrive together.
+leadSchema.index({submissionId:1},{unique:true,partialFilterExpression:{submissionId:{$type:'string'}}});
 export const Lead = models.Lead || model('Lead',leadSchema);
 const conversationSchema=new Schema({
   participantUid:{type:String,required:true,unique:true,index:true},
