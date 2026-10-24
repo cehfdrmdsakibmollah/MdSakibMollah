@@ -77,6 +77,31 @@ async function main() {
   });
   assert.equal(response.status, 401, 'Anonymous private chat creation must be 401');
   console.log('PASS: private identity, admin, and chat reject anonymous requests');
+
+  // Cover every additional owner-only or participant-only surface using a
+  // nonexistent ObjectId and NO authenticated user. The global requireAuth
+  // middleware must reject these before any reads, MongoDB writes or emails.
+  // This is intentionally NOT a signed-in client-to-owner round-trip test.
+  const dummyId = '000000000000000000000000';
+  const anonymousEndpoints = [
+    {method:'GET',path:`/conversations/${dummyId}/messages`},
+    {method:'GET',path:'/admin/leads'},
+    {method:'GET',path:'/admin/feedback'},
+    {method:'POST',path:`/conversations/${dummyId}/messages`,body:{text:'TEST_ONLY_NOT_PERSISTED'}},
+    {method:'POST',path:`/conversations/${dummyId}/feedback`,body:{rating:5,comment:'TEST_ONLY_NOT_PERSISTED'}},
+    {method:'POST',path:`/conversations/${dummyId}/owner-replies/opened`,body:{messageIds:[dummyId]}},
+    {method:'PATCH',path:`/admin/leads/${dummyId}`,body:{status:'closed'}},
+  ];
+  for (const item of anonymousEndpoints) {
+    const options = item.body ? {
+      method:item.method,
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(item.body)
+    } : {method:item.method};
+    const guarded = await request(SITE + '/api/backend' + item.path, options);
+    assert.equal(guarded.status,401,`Anonymous ${item.method} ${item.path} must be 401`);
+  }
+  console.log('PASS: private messages, opened receipts, feedback, leads and owner APIs reject anonymous access (401)');
   // Test the newly deployed owner-only notification diagnostic without credentials:
   // an unauthenticated caller must NOT be able to send an email or trigger work.
   response = await request(SITE + '/api/backend/admin/notifications/test', {
